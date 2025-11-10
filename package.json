@@ -1,6 +1,7 @@
 {
     "name": "@safe-global/safe-smart-account",
     "version": "1.5.0",
+    "type": "module",
     "description": "Ethereum multisig contract",
     "homepage": "https://github.com/safe-global/safe-smart-account/",
     "license": "LGPL-3.0",
@@ -40,7 +41,7 @@
         "fmt:ts": "prettier 'src/**/*.ts' 'test/**/*.ts' -w",
         "prepack": "npm run build",
         "prepare": "husky",
-        "prepublish": "rimraf build && npm run build && npm run build:ts"
+        "prepublish": "exit 0 # rimraf build && npm run build && npm run build:ts"
     },
     "repository": {
         "type": "git",
@@ -57,7 +58,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.39.1",
-        "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+        "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
         "@openzeppelin/contracts": "^3.4.2",
         "@safe-global/mock-contract": "^4.1.0",
         "@safe-global/safe-singleton-factory": "^2.0.0",
@@ -73,7 +74,7 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-no-only-tests": "^3.3.0",
         "eslint-plugin-prettier": "^5.5.4",
-        "hardhat": "^2.27.0",
+        "hardhat": "^3.0.12",
         "hardhat-deploy": "^1.0.4",
         "husky": "^9.1.7",
         "prettier": "^3.6.2",
