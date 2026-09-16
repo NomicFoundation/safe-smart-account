@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
 import { AddressZero, HashZero } from "@ethersproject/constants";
-import { deployContractFromSource, getExtensibleFallbackHandler, getSafe } from "../utils/setup";
-import { buildSignatureBytes, executeContractCallWithSigners, EIP712_SAFE_MESSAGE_TYPE } from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { encodeHandler, decodeHandler, encodeCustomVerifier, encodeHandlerFunction } from "../utils/extensible";
-import { killLibContract } from "../utils/contracts";
+import { deployContractFromSource, getExtensibleFallbackHandler, getSafe } from "../utils/setup.js";
+import { buildSignatureBytes, executeContractCallWithSigners, EIP712_SAFE_MESSAGE_TYPE } from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { encodeHandler, decodeHandler, encodeCustomVerifier, encodeHandlerFunction } from "../utils/extensible.js";
+import { killLibContract } from "../utils/contracts.js";
 
 describe("ExtensibleFallbackHandler", () => {
     const setupTests = deployments.createFixture(async ({ deployments }) => {

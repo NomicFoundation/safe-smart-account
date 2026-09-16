@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { deployContractFromSource } from "../utils/setup";
+import { deployContractFromSource } from "../utils/setup.js";
 
 describe("Proxy", () => {
     describe("constructor", () => {

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { defaultTokenCallbackHandlerDeployment, getSafeTemplate } from "../utils/setup";
+import { defaultTokenCallbackHandlerDeployment, getSafeTemplate } from "../utils/setup.js";
 
 describe("Safe", () => {
     const setupWithTemplate = hre.deployments.createFixture(async ({ deployments }) => {

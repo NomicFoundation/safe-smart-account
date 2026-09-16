@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers, deployments } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getTokenCallbackHandler } from "../utils/setup";
+import { getSafe, getTokenCallbackHandler } from "../utils/setup.js";
 
 describe("TokenCallbackHandler", () => {
     const setupTests = deployments.createFixture(async () => {

@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { getSafe, getSignMessageLib } from "../utils/setup";
-import { executeContractCallWithSigners, calculateSafeMessageHash } from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
+import { getSafe, getSignMessageLib } from "../utils/setup.js";
+import { executeContractCallWithSigners, calculateSafeMessageHash } from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
 
 describe("SignMessageLib", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

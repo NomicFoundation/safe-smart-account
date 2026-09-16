@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getCompatFallbackHandler, getSafe } from "../utils/setup";
+import { getCompatFallbackHandler, getSafe } from "../utils/setup.js";
 import {
     buildSignatureBytes,
     executeContractCallWithSigners,
@@ -9,9 +9,9 @@ import {
     buildContractSignature,
     EIP712_SAFE_MESSAGE_TYPE,
     signHash,
-} from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { badSimulatorContract, killLibContract, revertingSignatureValidatorContract } from "../utils/contracts";
+} from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { badSimulatorContract, killLibContract, revertingSignatureValidatorContract } from "../utils/contracts.js";
 
 describe("CompatibilityFallbackHandler", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

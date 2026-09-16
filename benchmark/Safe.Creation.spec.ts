@@ -1,4 +1,4 @@
-import { setupBenchmarkContracts } from "./utils/setup";
+import { setupBenchmarkContracts } from "./utils/setup.js";
 
 const contractSetup = setupBenchmarkContracts(undefined, true);
 describe("Safe", () => {

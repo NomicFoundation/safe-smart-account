@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getEip7702Safe } from "../utils/setup";
-import { executeContractCallWithSigners } from "../../src/utils/execution";
-import { AddressOne } from "../../src/utils/constants";
+import { getSafe, getEip7702Safe } from "../utils/setup.js";
+import { executeContractCallWithSigners } from "../../src/utils/execution.js";
+import { AddressOne } from "../../src/utils/constants.js";
 
 describe("OwnerManager", () => {
     const setupTests = deployments.createFixture(async ({ deployments }) => {

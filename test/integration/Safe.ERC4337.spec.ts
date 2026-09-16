@@ -1,8 +1,8 @@
 import hre from "hardhat";
 import { expect } from "chai";
 import { AddressZero } from "@ethersproject/constants";
-import { getFactory, getSafeSingletonAt } from "../utils/setup";
-import { calculateProxyAddress } from "../../src/utils/proxies";
+import { getFactory, getSafeSingletonAt } from "../utils/setup.js";
+import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
 const nonEmptyString = (value?: string) => typeof value !== "undefined" && value !== "";
 

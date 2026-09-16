@@ -1,10 +1,15 @@
-import { signHash } from "./../../src/utils/execution";
+import { signHash } from "./../../src/utils/execution.js";
 import { expect } from "chai";
 import hre from "hardhat";
-import { getMock, getSafe } from "../utils/setup";
-import { buildSafeTransaction, calculateSafeTransactionHash, executeContractCallWithSigners, executeTx } from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { getSenderAddressFromContractRunner } from "../utils/contracts";
+import { getMock, getSafe } from "../utils/setup.js";
+import {
+    buildSafeTransaction,
+    calculateSafeTransactionHash,
+    executeContractCallWithSigners,
+    executeTx,
+} from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { getSenderAddressFromContractRunner } from "../utils/contracts.js";
 
 describe("DebugTransactionGuard", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

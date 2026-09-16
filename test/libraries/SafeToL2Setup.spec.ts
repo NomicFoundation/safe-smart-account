@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
-import { getFactory, getSafe, getSafeL2Singleton, getSafeSingleton } from "../utils/setup";
-import { sameHexString } from "../utils/strings";
-import { executeContractCallWithSigners } from "../../src";
-import { EXPECTED_SAFE_STORAGE_LAYOUT, getContractStorageLayout } from "../utils/storage";
+import { getFactory, getSafe, getSafeL2Singleton, getSafeSingleton } from "../utils/setup.js";
+import { sameHexString } from "../utils/strings.js";
+import { executeContractCallWithSigners } from "../../src/index.js";
+import { EXPECTED_SAFE_STORAGE_LAYOUT, getContractStorageLayout } from "../utils/storage.js";
 
 type HardhatTraceLog = {
     depth: number;

@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { loadSolc } from "../utils/solc";
+import { loadSolc } from "../utils/solc.js";
 
 task("codesize", "Displays the codesize of the contracts")
     .addParam("skipcompile", "should not compile before printing size", false, types.boolean, true)

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { getSafeSingleton, getSafe } from "../utils/setup";
-import { killLibContract } from "../utils/contracts";
+import { getSafeSingleton, getSafe } from "../utils/setup.js";
+import { killLibContract } from "../utils/contracts.js";
 
 describe("StorageAccessible", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

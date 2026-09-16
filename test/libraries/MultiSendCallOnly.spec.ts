@@ -1,15 +1,15 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { deployContractFromSource, getMock, getMultiSendCallOnly, getSafe, getDelegateCaller } from "../utils/setup";
+import { deployContractFromSource, getMock, getMultiSendCallOnly, getSafe, getDelegateCaller } from "../utils/setup.js";
 import {
     buildContractCall,
     buildSafeTransaction,
     executeTx,
     executeTxWithSigners,
-    MetaTransaction,
+    type MetaTransaction,
     safeApproveHash,
-} from "../../src/utils/execution";
-import { buildMultiSendSafeTx } from "../../src/utils/multisend";
+} from "../../src/utils/execution.js";
+import { buildMultiSendSafeTx } from "../../src/utils/multisend.js";
 
 describe("MultiSendCallOnly", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

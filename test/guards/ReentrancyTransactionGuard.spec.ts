@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { getMock, getSafe } from "../utils/setup";
+import { getMock, getSafe } from "../utils/setup.js";
 import {
     buildSafeTransaction,
     buildSignatureBytes,
@@ -8,7 +8,7 @@ import {
     executeTx,
     executeTxWithSigners,
     safeSignTypedData,
-} from "../../src/utils/execution";
+} from "../../src/utils/execution.js";
 
 describe("ReentrancyTransactionGuard", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

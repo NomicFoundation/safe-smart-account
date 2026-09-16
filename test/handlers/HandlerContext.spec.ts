@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafeTemplate } from "../utils/setup";
+import { getSafeTemplate } from "../utils/setup.js";
 
 describe("HandlerContext", () => {
     const setup = deployments.createFixture(async ({ deployments }) => {

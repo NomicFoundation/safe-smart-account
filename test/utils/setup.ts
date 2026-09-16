@@ -1,10 +1,10 @@
 import hre, { deployments } from "hardhat";
-import { Contract, Signer, ethers } from "ethers";
+import { Contract, type Signer, ethers } from "ethers";
 import { AddressZero } from "@ethersproject/constants";
 import solc from "solc";
-import { logGas } from "../../src/utils/execution";
-import { safeContractUnderTest } from "./config";
-import { getRandomIntAsString } from "./numbers";
+import { logGas } from "../../src/utils/execution.js";
+import { safeContractUnderTest } from "./config.js";
+import { getRandomIntAsString } from "./numbers.js";
 import { MockContract, Safe, SafeL2 } from "../../typechain-types";
 
 type SafeSingleton = {

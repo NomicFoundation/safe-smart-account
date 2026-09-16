@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { deployContractFromSource, getSafe } from "../utils/setup";
+import { deployContractFromSource, getSafe } from "../utils/setup.js";
 
 describe("Safe", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

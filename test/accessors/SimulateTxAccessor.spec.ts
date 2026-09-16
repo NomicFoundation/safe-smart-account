@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
-import { deployContractFromSource, getSimulateTxAccessor, getSafe, getCompatFallbackHandler } from "../utils/setup";
-import { buildContractCall } from "../../src/utils/execution";
+import { deployContractFromSource, getSimulateTxAccessor, getSafe, getCompatFallbackHandler } from "../utils/setup.js";
+import { buildContractCall } from "../../src/utils/execution.js";
 
 describe("SimulateTxAccessor", () => {
     const setupTests = deployments.createFixture(async ({ deployments }) => {

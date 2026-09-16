@@ -1,6 +1,6 @@
-import { buildSafeTransaction } from "../src/utils/execution";
-import { benchmark } from "./utils/setup";
-import { getFactory } from "../test/utils/setup";
+import { buildSafeTransaction } from "../src/utils/execution.js";
+import { benchmark } from "./utils/setup.js";
+import { getFactory } from "../test/utils/setup.js";
 
 benchmark("Proxy", async () => [
     {

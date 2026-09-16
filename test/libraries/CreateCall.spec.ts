@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { compile, getCreateCall, getSafe } from "../utils/setup";
-import { buildContractCall, executeTx, safeApproveHash } from "../../src/utils/execution";
+import { compile, getCreateCall, getSafe } from "../utils/setup.js";
+import { buildContractCall, executeTx, safeApproveHash } from "../../src/utils/execution.js";
 
 const CONTRACT_SOURCE = `
 contract Test {

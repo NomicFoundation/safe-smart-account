@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import hre, { ethers, deployments } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafeSingleton, getFactory, getMock, getMultiSend } from "../utils/setup";
-import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution";
-import { verificationTests } from "./subTests.spec";
-import deploymentData from "../json/safeDeployment.json";
-import { calculateProxyAddress } from "../../src/utils/proxies";
+import { getSafeSingleton, getFactory, getMock, getMultiSend } from "../utils/setup.js";
+import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution.js";
+import { verificationTests } from "./subTests.spec.js";
+import deploymentData from "../json/safeDeployment.json" with { type: "json" };
+import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
 describe("Upgrade from Safe 1.1.1", () => {
     const ChangeMasterCopyInterface = new ethers.Interface(["function changeMasterCopy(address target)"]);

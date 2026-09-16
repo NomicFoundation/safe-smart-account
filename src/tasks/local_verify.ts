@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { loadSolc } from "../utils/solc";
+import { loadSolc } from "../utils/solc.js";
 
 task("local-verify", "Verifies that the local deployment files correspond to the on chain code").setAction(async (_, hre) => {
     const allowedSourceKey = ["keccak256", "content"];

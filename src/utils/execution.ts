@@ -1,4 +1,4 @@
-import { Signer, BigNumberish, BaseContract, ethers } from "ethers";
+import { type Signer, type BigNumberish, BaseContract, ethers } from "ethers";
 import { AddressZero } from "@ethersproject/constants";
 import { Safe } from "../../typechain-types";
 import { PayableOverrides } from "../../typechain-types/common";

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getMock, getSafe } from "../utils/setup";
+import { getMock, getSafe } from "../utils/setup.js";
 import {
     buildContractCall,
     buildSafeTransaction,
@@ -10,9 +10,9 @@ import {
     executeContractCallWithSigners,
     executeTx,
     safeApproveHash,
-} from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { getSenderAddressFromContractRunner } from "../utils/contracts";
+} from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { getSenderAddressFromContractRunner } from "../utils/contracts.js";
 
 describe("GuardManager", () => {
     const GUARD_STORAGE_SLOT = ethers.keccak256(ethers.toUtf8Bytes("guard_manager.guard.address"));

@@ -1,5 +1,5 @@
-import { Signer, BaseContract } from "ethers";
-import { deployContractFromSource } from "./setup";
+import { type Signer, BaseContract } from "ethers";
+import { deployContractFromSource } from "./setup.js";
 
 export const killLibSource = `
 contract Test {

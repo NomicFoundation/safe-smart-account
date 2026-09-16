@@ -1,4 +1,4 @@
-import { ethers, BigNumberish } from "ethers";
+import { ethers, type BigNumberish } from "ethers";
 import { SafeProxyFactory } from "../../typechain-types";
 
 export const calculateProxyAddress = async (factory: SafeProxyFactory, singleton: string, initializer: string, nonce: number | string) => {

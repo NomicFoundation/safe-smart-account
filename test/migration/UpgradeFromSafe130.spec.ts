@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import hre, { deployments } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getFactory, getMock, getMultiSend } from "../utils/setup";
-import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution";
-import { verificationTests } from "./subTests.spec";
-import deploymentData from "../json/safeDeployment.json";
-import { calculateProxyAddress } from "../../src/utils/proxies";
+import { getFactory, getMock, getMultiSend } from "../utils/setup.js";
+import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution.js";
+import { verificationTests } from "./subTests.spec.js";
+import deploymentData from "../json/safeDeployment.json" with { type: "json" };
+import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
 describe("Upgrade from Safe 1.3.0", () => {
     // We migrate the Safe and run the verification tests

@@ -1,4 +1,4 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { type HardhatRuntimeEnvironment } from "hardhat/types";
 import fs from "fs";
 
 type StateVariable = {

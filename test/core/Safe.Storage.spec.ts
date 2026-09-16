@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { getContractStorageLayout } from "../utils/storage";
+import { getContractStorageLayout } from "../utils/storage.js";
 
 describe("Safe", () => {
     it("follows storage layout defined by SafeStorage library", async () => {

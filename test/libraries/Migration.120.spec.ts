@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getSafeSingleton, migrationContractFactory } from "../utils/setup";
-import deploymentData from "../json/safeDeployment.json";
-import { executeContractCallWithSigners } from "../../src/utils/execution";
+import { getSafe, getSafeSingleton, migrationContractFactory } from "../utils/setup.js";
+import deploymentData from "../json/safeDeployment.json" with { type: "json" };
+import { executeContractCallWithSigners } from "../../src/utils/execution.js";
 
 describe("Migration 1.2.0", () => {
     const MigratedInterface = new ethers.Interface([

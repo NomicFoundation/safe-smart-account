@@ -1,15 +1,15 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
-import { BigNumberish } from "ethers";
-import { getTokenCallbackHandler, getSafe } from "../../test/utils/setup";
+import { type BigNumberish } from "ethers";
+import { getTokenCallbackHandler, getSafe } from "../../test/utils/setup.js";
 import {
     logGas,
     executeTx,
-    SafeTransaction,
+    type SafeTransaction,
     safeSignTypedData,
-    SafeSignature,
+    type SafeSignature,
     executeContractCallWithSigners,
-} from "../../src/utils/execution";
+} from "../../src/utils/execution.js";
 import { AddressZero } from "@ethersproject/constants";
 import { Safe, SafeL2 } from "../../typechain-types";
 

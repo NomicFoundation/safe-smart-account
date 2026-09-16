@@ -1,8 +1,13 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { defaultTokenCallbackHandlerDeployment, deployContractFromSource, getSafeTemplate, getTokenCallbackHandler } from "../utils/setup";
-import { executeContractCallWithSigners } from "../../src/utils/execution";
+import {
+    defaultTokenCallbackHandlerDeployment,
+    deployContractFromSource,
+    getSafeTemplate,
+    getTokenCallbackHandler,
+} from "../utils/setup.js";
+import { executeContractCallWithSigners } from "../../src/utils/execution.js";
 
 describe("FallbackManager", () => {
     const setupWithTemplate = deployments.createFixture(async ({ deployments }) => {

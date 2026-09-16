@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
-import { getMock, getSafe } from "../utils/setup";
+import { getMock, getSafe } from "../utils/setup.js";
 import {
     safeApproveHash,
     buildSafeTransaction,
     buildSignatureBytes,
     executeTx,
     executeContractCallWithSigners,
-} from "../../src/utils/execution";
-import { safeContractUnderTest } from "../utils/config";
+} from "../../src/utils/execution.js";
+import { safeContractUnderTest } from "../utils/config.js";
 
 describe("SafeL2", () => {
     before(function () {

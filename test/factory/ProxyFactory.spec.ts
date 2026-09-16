@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { Contract } from "ethers";
-import { deployContractFromSource, getFactory, getMock, getSafe, getSafeProxyRuntimeCode } from "../utils/setup";
+import { deployContractFromSource, getFactory, getMock, getSafe, getSafeProxyRuntimeCode } from "../utils/setup.js";
 import { AddressZero } from "@ethersproject/constants";
-import { calculateChainSpecificProxyAddress, calculateProxyAddress } from "../../src/utils/proxies";
-import { chainId } from "./../utils/encoding";
+import { calculateChainSpecificProxyAddress, calculateProxyAddress } from "../../src/utils/proxies.js";
+import { chainId } from "./../utils/encoding.js";
 
 describe("ProxyFactory", () => {
     const SINGLETON_SOURCE = `

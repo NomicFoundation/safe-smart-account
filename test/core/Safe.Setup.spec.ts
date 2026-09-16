@@ -2,11 +2,11 @@ import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
 
-import { deployContractFromSource, getEip7702SafeTemplate, getMock, getSafeSingleton, getSafeTemplate } from "../utils/setup";
-import { calculateSafeDomainSeparator } from "../../src/utils/execution";
-import { AddressOne } from "../../src/utils/constants";
-import { chainId, encodeTransfer } from "../utils/encoding";
-import { getSenderAddressFromContractRunner } from "../utils/contracts";
+import { deployContractFromSource, getEip7702SafeTemplate, getMock, getSafeSingleton, getSafeTemplate } from "../utils/setup.js";
+import { calculateSafeDomainSeparator } from "../../src/utils/execution.js";
+import { AddressOne } from "../../src/utils/constants.js";
+import { chainId, encodeTransfer } from "../utils/encoding.js";
+import { getSenderAddressFromContractRunner } from "../utils/contracts.js";
 
 describe("Safe", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

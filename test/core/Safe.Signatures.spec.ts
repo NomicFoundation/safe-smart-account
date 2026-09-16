@@ -1,11 +1,11 @@
-import { getCompatFallbackHandler } from "./../utils/setup";
-import { calculateSafeMessageHash, signHash, buildContractSignature } from "./../../src/utils/execution";
+import { getCompatFallbackHandler } from "./../utils/setup.js";
+import { calculateSafeMessageHash, signHash, buildContractSignature } from "./../../src/utils/execution.js";
 import { expect } from "chai";
 import hre from "hardhat";
 import crypto from "crypto";
 import { AddressZero } from "@ethersproject/constants";
 import { p256 } from "@noble/curves/nist.js";
-import { getSafeTemplate, getSafe, getEip7702Safe } from "../utils/setup";
+import { getSafeTemplate, getSafe, getEip7702Safe } from "../utils/setup.js";
 import {
     safeSignTypedData,
     executeTx,
@@ -18,9 +18,9 @@ import {
     calculateSafeDomainSeparator,
     preimageSafeTransactionHash,
     buildSignatureBytes,
-} from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { revertingSignatureValidatorContract } from "../utils/contracts";
+} from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { revertingSignatureValidatorContract } from "../utils/contracts.js";
 
 describe("Safe", () => {
     const setupTests = hre.deployments.createFixture(async ({ deployments }) => {

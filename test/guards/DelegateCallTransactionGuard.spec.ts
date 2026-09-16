@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe } from "../utils/setup";
-import { buildContractCall, executeContractCallWithSigners } from "../../src/utils/execution";
-import { AddressOne } from "../../src/utils/constants";
+import { getSafe } from "../utils/setup.js";
+import { buildContractCall, executeContractCallWithSigners } from "../../src/utils/execution.js";
+import { AddressOne } from "../../src/utils/constants.js";
 
 describe("DelegateCallTransactionGuard", () => {
     const setupTests = deployments.createFixture(async ({ deployments }) => {

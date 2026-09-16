@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import hre, { deployments, ethers } from "hardhat";
-import { getSafe } from "../utils/setup";
-import { AddressOne } from "../../src/utils/constants";
+import { getSafe } from "../utils/setup.js";
+import { AddressOne } from "../../src/utils/constants.js";
 
 describe("Safe - Reserved Addresses", () => {
     const setupTests = deployments.createFixture(async ({ deployments }) => {
