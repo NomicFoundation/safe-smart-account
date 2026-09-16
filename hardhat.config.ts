@@ -1,5 +1,6 @@
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import { configVariable, defineConfig } from "hardhat/config";
+import hardhatDeploy from "hardhat-deploy";
 import dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
@@ -19,7 +20,7 @@ const accounts = PK
 const sharedNetworkConfig = { type: "http", chainType: "l1", accounts } as const;
 
 export default defineConfig({
-    plugins: [hardhatToolboxMochaEthers],
+    plugins: [hardhatToolboxMochaEthers, hardhatDeploy],
     paths: {
         artifacts: "build/artifacts",
         cache: "build/cache",
