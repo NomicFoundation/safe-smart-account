@@ -1,5 +1,6 @@
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
-import { configVariable, defineConfig } from "hardhat/config";
+import { configVariable, defineConfig, task } from "hardhat/config";
+import { ArgumentType } from "hardhat/types/arguments";
 import hardhatDeploy from "hardhat-deploy";
 import dotenv from "dotenv";
 
@@ -19,7 +20,27 @@ const accounts = PK
 
 const sharedNetworkConfig = { type: "http", chainType: "l1", accounts } as const;
 
+const codesize = task("codesize", "Displays the codesize of the contracts")
+    .addFlag({ name: "skipcompile", description: "should not compile before printing size" })
+    .addOption({ name: "contractname", description: "name of the contract", type: ArgumentType.STRING, defaultValue: "" })
+    .setAction(() => import("./src/tasks/show_codesize.js"))
+    .build();
+
+const yulcode = task("yulcode", "Outputs yul code for contracts")
+    .addOption({ name: "contractname", description: "name of the contract", type: ArgumentType.STRING, defaultValue: "" })
+    .setAction(() => import("./src/tasks/show_yulcode.js"))
+    .build();
+
+const localVerify = task("local-verify", "Verifies that the local deployment files correspond to the on chain code")
+    .setAction(() => import("./src/tasks/local_verify.js"))
+    .build();
+
+const deployContracts = task("deploy-contracts", "Deploys and verifies Safe Smart Account contracts")
+    .setAction(() => import("./src/tasks/deploy_contracts.js"))
+    .build();
+
 export default defineConfig({
+    tasks: [codesize, yulcode, localVerify, deployContracts],
     plugins: [hardhatToolboxMochaEthers, hardhatDeploy],
     paths: {
         artifacts: "build/artifacts",

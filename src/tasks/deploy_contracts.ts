@@ -1,10 +1,11 @@
-import { task } from "hardhat/config";
+import type { NewTaskActionFunction } from "hardhat/types/tasks";
 
-task("deploy-contracts", "Deploys and verifies Safe Smart Account contracts").setAction(async (_, hre) => {
-    await hre.run("deploy");
-    await hre.run("local-verify");
-    await hre.run("sourcify");
-    await hre.run("etherscan-verify", { forceLicense: true, license: "LGPL-3.0" });
-});
+const deployContracts: NewTaskActionFunction = async (_taskArgs, hre) => {
+    await hre.tasks.getTask("deploy").run({});
+    await hre.tasks.getTask("local-verify").run({});
+    // `hardhat-verify` covers Etherscan and Sourcify, so the two separate steps this used to run
+    // are one task now.
+    await hre.tasks.getTask("verify").run({});
+};
 
-export {};
+export default deployContracts;
