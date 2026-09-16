@@ -39,6 +39,11 @@ export default defineConfig({
     networks: {
         default: {
             type: "edr-simulated",
+            // Hardhat 2 ran this suite on a pre-Osaka hardfork. Hardhat 3 defaults to Osaka, which
+            // would quietly change what the EVM supports underneath every test — notably by enabling
+            // the secp256r1 precompile that `checkSignatures` has tests either side of. Pin it, so
+            // moving forks is a deliberate change rather than a side effect of a new default.
+            hardfork: "prague",
             allowUnlimitedContractSize: true,
             blockGasLimit: 100000000,
             gas: 100000000,
