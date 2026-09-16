@@ -23,7 +23,12 @@ export const getDeployment = async (name: string) => {
     if (deploymentEnvironment === undefined) {
         throw new Error(`No deployments available: "${name}" was requested outside of a createFixture() setup.`);
     }
-    return deploymentEnvironment.get(name);
+    const deployment = deploymentEnvironment.get(name);
+
+    // v1 handed back checksummed addresses. rocketh stores them lowercase, and the tests compare
+    // them against values read back out of contracts, which ethers always checksums — so
+    // re-checksum here rather than at every comparison.
+    return { ...deployment, address: ethers.getAddress(deployment.address) };
 };
 
 /**
