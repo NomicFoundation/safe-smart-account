@@ -32,6 +32,9 @@ export default defineConfig({
         outDir: "typechain-types",
     },
     solidity: {
+        // `MockContract` is only ever used by the tests and comes from an npm package rather than
+        // this repository, so it has to be named for Hardhat to build it and TypeChain to type it.
+        npmFilesToBuild: ["@safe-global/mock-contract/contracts/MockContract.sol"],
         compilers: [
             { version: SOLIDITY_VERSION ?? DEFAULT_SOLIDITY_VERSION, settings: soliditySettings },
             { version: DEFAULT_SOLIDITY_VERSION },
