@@ -74,6 +74,18 @@ export default defineConfig({
             gas: 100000000,
             chainId: Number(HARDHAT_CHAIN_ID ?? 31337),
         },
+        // Fusaka brings the secp256r1 precompile, which a handful of signature tests need and the
+        // rest of the suite deliberately does without. It also brings EIP-7825's per-transaction gas
+        // cap of 16,777,216, well below what this suite deploys with, so the cap is lifted here.
+        fusaka: {
+            type: "edr-simulated",
+            hardfork: "osaka",
+            allowUnlimitedContractSize: true,
+            blockGasLimit: 100000000,
+            gas: 100000000,
+            transactionGasCap: false,
+            chainId: Number(HARDHAT_CHAIN_ID ?? 31337),
+        },
         mainnet: {
             ...sharedNetworkConfig,
             url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,

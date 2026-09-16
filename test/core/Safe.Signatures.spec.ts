@@ -22,7 +22,7 @@ import {
 import { chainId } from "../utils/encoding.js";
 import { revertingSignatureValidatorContract } from "../utils/contracts.js";
 
-const { ethers, networkConfig } = await hre.network.getOrCreate();
+const { ethers } = await hre.network.getOrCreate();
 
 describe("Safe", () => {
     const setupTests = createFixture(async () => {
@@ -535,15 +535,18 @@ describe("Safe", () => {
             await expect(safe["checkSignatures(address,bytes32,bytes)"](authority.address, txHash, signatures)).to.not.be.revert(ethers);
         });
 
-        function isSecp256r1Enabled() {
-            return (networkConfig as { enableRip7212?: boolean }).enableRip7212 === true;
-        }
+        // The secp256r1 precompile only exists from Fusaka onwards. These tests therefore run
+        // against the `fusaka` network, while the test above — which asserts what happens
+        // without it — stays on the default one. Both run in a single `npm test`.
+        const setupSecp256r1Tests = createFixture(
+            async () => {
+                const signers = await ethers.getSigners();
+                return { signers };
+            },
+            { network: "fusaka" },
+        );
 
         it("should revert when RIP-7212/RIP-7951 is not enabled", async function () {
-            if (isSecp256r1Enabled()) {
-                this.skip();
-            }
-
             await setupTests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
@@ -576,11 +579,7 @@ describe("Safe", () => {
         });
 
         it("should allow RIP-7212/RIP-7951 signatures using the secp256r1 curve [@secp256r1]", async function () {
-            if (!isSecp256r1Enabled()) {
-                this.skip();
-            }
-
-            await setupTests();
+            await setupSecp256r1Tests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
             const address = ethers.getAddress(
@@ -610,7 +609,7 @@ describe("Safe", () => {
         });
 
         it("should revert on incorrectly encoded RIP-7212/RIP-7951 signatures [@secp256r1]", async function () {
-            await setupTests();
+            await setupSecp256r1Tests();
             const safe = await getSafe({
                 owners: [`0x${"42".repeat(20)}`],
                 threshold: 1,
@@ -635,7 +634,7 @@ describe("Safe", () => {
         });
 
         it("should revert if not signed by owner [@secp256r1]", async function () {
-            await setupTests();
+            await setupSecp256r1Tests();
             const owner = p256.keygen();
             const ownerPublicKeyCoords = p256.Point.fromBytes(owner.publicKey);
             const ownerAddress = ethers.getAddress(
@@ -672,11 +671,7 @@ describe("Safe", () => {
         });
 
         it("should revert on with invalid RIP-7212/RIP-7951 signatures [@secp256r1]", async function () {
-            if (!isSecp256r1Enabled()) {
-                this.skip();
-            }
-
-            await setupTests();
+            await setupSecp256r1Tests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
             const address = ethers.getAddress(

@@ -8,15 +8,30 @@ import { getRandomIntAsString } from "./numbers.js";
 import { type MockContract, type Safe, type SafeL2 } from "../../typechain-types/index.js";
 import { loadAndExecuteDeploymentsFromFiles } from "../../rocketh/environment.js";
 
-const { ethers } = await hre.network.getOrCreate();
-
+type Connection = Awaited<ReturnType<typeof hre.network.getOrCreate>>;
 type DeploymentEnvironment = Awaited<ReturnType<typeof loadAndExecuteDeploymentsFromFiles>>;
 
 /**
- * The deployments belonging to the fixture currently in scope. v1 hung these off the Hardhat
- * runtime environment; v2 returns them from the run, so the fixture puts them here for the `get*`
- * helpers below to read.
+ * The `ethers` of whichever network the fixture in scope is running against. A binding rather than
+ * a constant because most of the suite runs on the default network while the secp256r1 tests run on
+ * `fusaka`, and these helpers have to follow whichever is in play.
  */
+let ethers: Connection["ethers"] = (await hre.network.getOrCreate()).ethers;
+
+const connections = new Map<string, Promise<Connection>>();
+const deploymentEnvironments = new Map<string, DeploymentEnvironment>();
+
+const getConnection = (network?: string): Promise<Connection> => {
+    const key = network ?? "default";
+    let connection = connections.get(key);
+    if (connection === undefined) {
+        connection = network === undefined ? hre.network.getOrCreate() : hre.network.create({ network });
+        connections.set(key, connection);
+    }
+    return connection;
+};
+
+/** The deployments belonging to the fixture currently in scope. */
 let deploymentEnvironment: DeploymentEnvironment | undefined;
 
 export const getDeployment = async (name: string) => {
@@ -34,17 +49,30 @@ export const getDeployment = async (name: string) => {
 /**
  * Replaces `deployments.createFixture()`. Runs every deploy script, then the caller's setup, and
  * snapshots the result so that each test starts from the same chain state.
+ *
+ * Pass `network` to run against something other than the default network. Note that the two lines
+ * pointing the helpers at the right connection sit outside the fixture body deliberately:
+ * `loadFixture` runs that body once and replays the snapshot thereafter, so anything that has to
+ * hold for every call belongs out here.
  */
-export const createFixture = <T>(setup: () => Promise<T>): (() => Promise<T>) => {
+export const createFixture = <T>(setup: () => Promise<T>, options?: { network?: string }): (() => Promise<T>) => {
+    const key = options?.network ?? "default";
+
     const fixture = async () => {
-        const { provider } = await hre.network.getOrCreate();
-        deploymentEnvironment = await loadAndExecuteDeploymentsFromFiles({ provider });
+        const { provider } = await getConnection(options?.network);
+        deploymentEnvironments.set(key, await loadAndExecuteDeploymentsFromFiles({ provider }));
+        deploymentEnvironment = deploymentEnvironments.get(key);
         return setup();
     };
 
     return async () => {
-        const { networkHelpers } = await hre.network.getOrCreate();
-        return networkHelpers.loadFixture(fixture);
+        const connection = await getConnection(options?.network);
+        ({ ethers } = connection);
+        deploymentEnvironment = deploymentEnvironments.get(key);
+        const result = await connection.networkHelpers.loadFixture(fixture);
+        ({ ethers } = connection);
+        deploymentEnvironment = deploymentEnvironments.get(key);
+        return result;
     };
 };
 
