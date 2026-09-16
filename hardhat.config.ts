@@ -1,81 +1,34 @@
-import "@nomicfoundation/hardhat-toolbox";
-import type { HardhatUserConfig, HttpNetworkUserConfig } from "hardhat/types";
-import "hardhat-deploy";
-import type { DeterministicDeploymentInfo } from "hardhat-deploy/dist/types";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import { configVariable, defineConfig } from "hardhat/config";
 import dotenv from "dotenv";
-import yargs from "yargs";
-import { hideBin } from "yargs/helpers";
-import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
-
-import "./src/tasks/local_verify";
-import "./src/tasks/deploy_contracts";
-import "./src/tasks/show_codesize";
-
-const argv = yargs(hideBin(process.argv))
-    .option("network", {
-        type: "string",
-        default: "hardhat",
-    })
-    .help(false)
-    .version(false)
-    .parseSync();
 
 dotenv.config({ quiet: true });
-const {
-    NODE_URL,
-    INFURA_KEY,
-    MNEMONIC,
-    ETHERSCAN_API_KEY,
-    PK,
-    SOLIDITY_VERSION,
-    SOLIDITY_SETTINGS,
-    HARDHAT_CHAIN_ID,
-    HARDHAT_SECP256R1_PRECOMPILE,
-    HARDHAT_ENABLE_GAS_REPORTER,
-} = process.env;
-
-if (["mainnet", "sepolia"].includes(argv.network) && INFURA_KEY === undefined) {
-    throw new Error(`Could not find Infura key in env, unable to connect to network ${argv.network}`);
-}
+const { NODE_URL, INFURA_KEY, PK, SOLIDITY_VERSION, SOLIDITY_SETTINGS, HARDHAT_CHAIN_ID } = process.env;
 
 const DEFAULT_MNEMONIC = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
 const DEFAULT_SOLIDITY_VERSION = "0.7.6";
 
-const sharedNetworkConfig: HttpNetworkUserConfig = {};
-if (PK) {
-    sharedNetworkConfig.accounts = [PK];
-} else {
-    sharedNetworkConfig.accounts = {
-        mnemonic: MNEMONIC ?? DEFAULT_MNEMONIC,
-    };
-}
 const soliditySettings = SOLIDITY_SETTINGS ? JSON.parse(SOLIDITY_SETTINGS) : undefined;
 
-const deterministicDeployment = (network: string): DeterministicDeploymentInfo => {
-    const info = getSingletonFactoryInfo(parseInt(network));
-    if (!info) {
-        throw new Error(
-            `Safe factory not found for network ${network}. You can request a new deployment at https://github.com/safe-global/safe-singleton-factory.`,
-        );
-    }
-    return {
-        factory: info.address,
-        deployer: info.signerAddress,
-        funding: `${BigInt(info.gasLimit) * BigInt(info.gasPrice)}`,
-        signedTx: info.transaction,
-    };
-};
+// Which credential to sign with is a choice made when the config loads; the credential itself is
+// resolved lazily, so an unset variable only matters once a network is actually used.
+const accounts = PK
+    ? [configVariable("PK")]
+    : { mnemonic: configVariable("MNEMONIC", { default: DEFAULT_MNEMONIC }) };
 
-const userConfig: HardhatUserConfig = {
+const sharedNetworkConfig = { type: "http", chainType: "l1", accounts } as const;
+
+export default defineConfig({
+    plugins: [hardhatToolboxMochaEthers],
     paths: {
         artifacts: "build/artifacts",
         cache: "build/cache",
-        deploy: "src/deploy",
-        sources: "contracts",
+        sources: {
+            solidity: ["contracts"],
+        },
     },
     typechain: {
         outDir: "typechain-types",
-        target: "ethers-v6",
     },
     solidity: {
         compilers: [
@@ -84,12 +37,12 @@ const userConfig: HardhatUserConfig = {
         ],
     },
     networks: {
-        hardhat: {
+        default: {
+            type: "edr-simulated",
             allowUnlimitedContractSize: true,
             blockGasLimit: 100000000,
             gas: 100000000,
             chainId: Number(HARDHAT_CHAIN_ID ?? 31337),
-            enableRip7212: HARDHAT_SECP256R1_PRECOMPILE === "1",
         },
         mainnet: {
             ...sharedNetworkConfig,
@@ -101,12 +54,14 @@ const userConfig: HardhatUserConfig = {
         },
         gnosis: {
             ...sharedNetworkConfig,
-            url: `https://rpc.gnosischain.com`,
+            url: "https://rpc.gnosischain.com",
         },
         zksync: {
             ...sharedNetworkConfig,
             url: "https://mainnet.era.zksync.io",
         },
+        // As in Hardhat 2, `custom` only exists when NODE_URL names one: an empty URL is not a
+        // valid network, and Hardhat 3 rejects the config outright rather than at point of use.
         ...(NODE_URL
             ? {
                   custom: {
@@ -116,19 +71,14 @@ const userConfig: HardhatUserConfig = {
               }
             : {}),
     },
-    deterministicDeployment,
-    namedAccounts: {
-        deployer: 0,
+    test: {
+        mocha: {
+            timeout: 2000000,
+        },
     },
-    mocha: {
-        timeout: 2000000,
+    verify: {
+        etherscan: {
+            apiKey: configVariable("ETHERSCAN_API_KEY"),
+        },
     },
-    etherscan: {
-        apiKey: ETHERSCAN_API_KEY,
-    },
-    gasReporter: {
-        enabled: HARDHAT_ENABLE_GAS_REPORTER === "1",
-    },
-};
-
-export default userConfig;
+});
