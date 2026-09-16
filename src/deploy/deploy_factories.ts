@@ -1,16 +1,14 @@
-import { DeployFunction } from "hardhat-deploy/types";
-import { type HardhatRuntimeEnvironment } from "hardhat/types";
+import { artifacts, deployScript } from "../../rocketh/deploy.js";
 
-const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployer: deployerAccount } = await hre.getNamedAccounts();
+export default deployScript(
+    async ({ deploy, namedAccounts }) => {
+        const { deployer } = namedAccounts;
 
-    await hre.deployments.deploy("SafeProxyFactory", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
-};
-
-deploy.tags = ["factory", "l2-suite", "main-suite"];
-export default deploy;
+        await deploy("SafeProxyFactory", {
+            account: deployer,
+            artifact: artifacts.SafeProxyFactory,
+            args: [],
+        });
+    },
+    { tags: ["factory", "l2-suite", "main-suite"] },
+);
