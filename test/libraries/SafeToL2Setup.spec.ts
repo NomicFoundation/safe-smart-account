@@ -7,22 +7,9 @@ import { EXPECTED_SAFE_STORAGE_LAYOUT, getContractStorageLayout } from "../utils
 
 const { ethers, provider, networkConfig } = await hre.network.getOrCreate();
 
-type HardhatTraceLog = {
-    depth: number;
-    gas: number;
-    gasCost: number;
-    op: string;
-    pc: number;
-    stack: string[];
-    storage: { [key: string]: string };
-    memory: string;
-};
-
-type HardhatTrace = {
-    failed: boolean;
-    gas: number;
-    returnValue: string;
-    structLogs: HardhatTraceLog[];
+type PrestateDiff = {
+    pre: Record<string, { storage?: Record<string, string> }>;
+    post: Record<string, { storage?: Record<string, string> }>;
 };
 
 describe("SafeToL2Setup", () => {
@@ -141,68 +128,79 @@ describe("SafeToL2Setup", () => {
                 } = await setupTests();
 
                 const safeL2SingletonAddress = await safeL2.getAddress();
-                const safeToL2SetupLibAddress = await safeToL2SetupLib.getAddress();
                 const safeToL2SetupCall = safeToL2SetupLib.interface.encodeFunctionData("setupToL2", [safeL2SingletonAddress]);
 
-                const setupData = safeL2.interface.encodeFunctionData("setup", [
-                    [user1.address],
-                    1,
-                    safeToL2SetupLib.target,
-                    safeToL2SetupCall,
-                    ethers.ZeroAddress,
-                    ethers.ZeroAddress,
-                    0,
-                    ethers.ZeroAddress,
-                ]);
-                const safeAddress = await proxyFactory.createProxyWithNonce.staticCall(safeSingleton.target, setupData, 0);
+                const encodeSetup = (to: string, data: string) =>
+                    safeL2.interface.encodeFunctionData("setup", [
+                        [user1.address],
+                        1,
+                        to,
+                        data,
+                        ethers.ZeroAddress,
+                        ethers.ZeroAddress,
+                        0,
+                        ethers.ZeroAddress,
+                    ]);
 
-                const transaction = await (await proxyFactory.createProxyWithNonce(safeSingleton.target, setupData, 0)).wait();
-                if (!transaction?.hash) {
-                    throw new Error("No transaction hash");
-                }
-                // I decided to use tracing for this test because it gives an overview of all the storage slots involved in the transaction
-                // Alternatively, one could use `eth_getStorageAt` to check storage slots directly
-                // But that would not guarantee that other storage slots were not touched during the transaction
-                const trace = (await provider.send("debug_traceTransaction", [transaction.hash])) as HardhatTrace;
-                // Hardhat uses the most basic struct/opcode logger tracer: https://geth.ethereum.org/docs/developers/evm-tracing/built-in-tracers#struct-opcode-logger
-                // To find the "snapshot" of the storage before the DELEGATECALL into the library, we need to find the first DELEGATECALL opcode calling into the library
-                // To do that, we search for the DELEGATECALL opcode with the stack input pointing to the library address
-                const delegateCallIntoTheLib = trace.structLogs.findIndex(
-                    (log) =>
-                        log.op === "DELEGATECALL" &&
-                        sameHexString(log.stack[log.stack.length - 2], ethers.zeroPadValue(safeToL2SetupLibAddress, 32).slice(2)),
-                );
-                const preDelegateCallStorage = trace.structLogs[delegateCallIntoTheLib].storage;
-                const preDelegateCallDepth = trace.structLogs[delegateCallIntoTheLib].depth;
+                // Deploy the same Safe twice — once with `SafeToL2Setup` as the setup delegatecall
+                // target, once with no setup call at all — and compare the two storage diffs. What
+                // differs between them is exactly what the library did, which is what this test is
+                // about.
+                //
+                // Hardhat 2 got at this by walking `debug_traceTransaction` struct logs and reading
+                // the per-step `storage` either side of the DELEGATECALL. Hardhat 3's tracer does
+                // not report `storage` at any verbosity, so the diff comes from `prestateTracer`
+                // instead, and the delegatecall is isolated by comparison rather than by finding it
+                // in the opcode stream.
+                const storageDiff = async (to: string, data: string) => {
+                    const setupData = encodeSetup(to, data);
+                    const address = await proxyFactory.createProxyWithNonce.staticCall(safeSingleton.target, setupData, 0);
+                    const transaction = await (await proxyFactory.createProxyWithNonce(safeSingleton.target, setupData, 0)).wait();
+                    if (!transaction?.hash) {
+                        throw new Error("No transaction hash");
+                    }
+                    const diff = (await provider.send("debug_traceTransaction", [
+                        transaction.hash,
+                        { tracer: "prestateTracer", tracerConfig: { diffMode: true } },
+                    ])) as PrestateDiff;
+                    const account = Object.keys(diff.post).find((candidate) => sameHexString(candidate, address));
+                    if (account === undefined) {
+                        throw new Error(`No storage diff recorded for ${address}`);
+                    }
+                    return { address, storage: diff.post[account].storage ?? {} };
+                };
 
-                // Find the end of the delegatecall, to see how the storage changed.
-                const postDelegateCall = trace.structLogs
-                    .slice(delegateCallIntoTheLib + 1)
-                    .find((log) => log.depth === preDelegateCallDepth);
-                if (!postDelegateCall) {
-                    throw new Error("No end of delegate call");
-                }
-                const postDelegateCallStorage = postDelegateCall.storage;
+                const withLibrary = await storageDiff(safeToL2SetupLib.target as string, safeToL2SetupCall);
+                const withoutLibrary = await storageDiff(ethers.ZeroAddress, "0x");
 
-                for (const [key, value] of Object.entries(postDelegateCallStorage)) {
-                    // The slot key 0 is the singleton storage slot, it must equal the L2 singleton address
-                    if (sameHexString(key, ethers.zeroPadValue("0x00", 32))) {
-                        expect(sameHexString(ethers.zeroPadValue(safeL2SingletonAddress, 32), value)).to.be.true;
+                const singletonSlot = ethers.zeroPadValue("0x00", 32);
+
+                // Apart from the singleton slot, every slot the library touched must hold what it
+                // would have held without the library.
+                for (const [slot, value] of Object.entries(withLibrary.storage)) {
+                    if (sameHexString(slot, singletonSlot)) {
+                        expect(sameHexString(value, ethers.zeroPadValue(safeL2SingletonAddress, 32))).to.be.true;
                     } else {
-                        // All other storage slots must be the same as before the DELEGATECALL
-                        if (key in preDelegateCallStorage) {
-                            expect(sameHexString(preDelegateCallStorage[key], value)).to.be.true;
-                        } else {
-                            // This special case is needed because the SafeToL2Setup library inherits the SafeStorage library
-                            // And that makes the tracer report all the storage slots in the SafeStorage library as well
-                            // Even though if they were not touched during the transaction
-                            expect(sameHexString(value, "0".repeat(64))).to.be.true;
-                        }
+                        expect(
+                            Object.entries(withoutLibrary.storage).some(
+                                ([baseline, baselineValue]) => sameHexString(baseline, slot) && sameHexString(baselineValue, value),
+                            ),
+                            `slot ${slot} was changed by SafeToL2Setup`,
+                        ).to.be.true;
                     }
                 }
 
+                // ...and it must not have skipped a slot the plain setup writes.
+                for (const slot of Object.keys(withoutLibrary.storage)) {
+                    if (sameHexString(slot, singletonSlot)) continue;
+                    expect(
+                        Object.keys(withLibrary.storage).some((candidate) => sameHexString(candidate, slot)),
+                        `slot ${slot} was not written when SafeToL2Setup ran`,
+                    ).to.be.true;
+                }
+
                 // Double-check that the storage slot was changed at the end of the transaction
-                const singletonInStorage = await ethers.provider.getStorage(safeAddress, ethers.zeroPadValue("0x00", 32));
+                const singletonInStorage = await ethers.provider.getStorage(withLibrary.address, singletonSlot);
                 expect(sameHexString(singletonInStorage, ethers.zeroPadValue(safeL2SingletonAddress, 32))).to.be.true;
             });
         });
