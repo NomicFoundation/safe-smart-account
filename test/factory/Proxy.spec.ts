@@ -1,12 +1,14 @@
 import { expect } from "chai";
 import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { deployContractFromSource } from "../utils/setup";
+import { deployContractFromSource, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("Proxy", () => {
     describe("constructor", () => {
         it("should revert with invalid singleton address", async () => {
-            const Proxy = await hre.ethers.getContractFactory("SafeProxy");
+            const Proxy = await ethers.getContractFactory("SafeProxy");
             await expect(Proxy.deploy(AddressZero)).to.be.revertedWith("Invalid singleton address provided");
         });
     });
@@ -26,10 +28,10 @@ describe("Proxy", () => {
             }
         }`;
 
-        const setupTests = hre.deployments.createFixture(async () => {
-            const [deployer] = await hre.ethers.getSigners();
+        const setupTests = createFixture(async () => {
+            const [deployer] = await ethers.getSigners();
             const singleton = await deployContractFromSource(deployer, SINGLETON_SOURCE);
-            const Proxy = await hre.ethers.getContractFactory("SafeProxy");
+            const Proxy = await ethers.getContractFactory("SafeProxy");
             const proxyDeployment = await Proxy.deploy(singleton.target);
             const proxy = singleton.attach(proxyDeployment) as typeof singleton;
             return {
@@ -40,25 +42,25 @@ describe("Proxy", () => {
 
         it("should return the master copy address regardless of implementation", async () => {
             const { singleton, proxy } = await setupTests();
-            expect(await singleton.masterCopy()).to.equal(hre.ethers.ZeroAddress);
+            expect(await singleton.masterCopy()).to.equal(ethers.ZeroAddress);
             expect(await proxy.masterCopy()).to.equal(await singleton.getAddress());
         });
 
         it("should ignore extra calldata bytes", async () => {
             const { singleton, proxy } = await setupTests();
-            const callData = hre.ethers.concat([proxy.interface.encodeFunctionData("masterCopy", []), "0xbaddad"]);
-            const returnData = await hre.ethers.provider.call({
+            const callData = ethers.concat([proxy.interface.encodeFunctionData("masterCopy", []), "0xbaddad"]);
+            const returnData = await ethers.provider.call({
                 to: await proxy.getAddress(),
                 data: callData,
             });
-            const [masterCopy] = hre.ethers.AbiCoder.defaultAbiCoder().decode(["address"], returnData);
+            const [masterCopy] = ethers.AbiCoder.defaultAbiCoder().decode(["address"], returnData);
             expect(masterCopy).to.equal(await singleton.getAddress());
         });
 
         it("should correctly mask the address value", async () => {
             const { proxy } = await setupTests();
-            await proxy.overwriteSingletonSlot(hre.ethers.MaxUint256);
-            expect(await proxy.masterCopy()).to.equal(hre.ethers.getAddress(`0x${"ff".repeat(20)}`));
+            await proxy.overwriteSingletonSlot(ethers.MaxUint256);
+            expect(await proxy.masterCopy()).to.equal(ethers.getAddress(`0x${"ff".repeat(20)}`));
         });
 
         it("should ignore most significant bits when calling singleton", async () => {

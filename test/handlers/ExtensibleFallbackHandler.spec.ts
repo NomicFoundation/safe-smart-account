@@ -1,17 +1,18 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero, HashZero } from "@ethersproject/constants";
-import { deployContractFromSource, getExtensibleFallbackHandler, getSafe } from "../utils/setup";
-import { buildSignatureBytes, executeContractCallWithSigners, EIP712_SAFE_MESSAGE_TYPE } from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { encodeHandler, decodeHandler, encodeCustomVerifier, encodeHandlerFunction } from "../utils/extensible";
-import { killLibContract } from "../utils/contracts";
+import { deployContractFromSource, getExtensibleFallbackHandler, getSafe, createFixture } from "../utils/setup.js";
+import { buildSignatureBytes, executeContractCallWithSigners, EIP712_SAFE_MESSAGE_TYPE } from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { encodeHandler, decodeHandler, encodeCustomVerifier, encodeHandlerFunction } from "../utils/extensible.js";
+import { killLibContract } from "../utils/contracts.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("ExtensibleFallbackHandler", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const [user1, user2] = await hre.ethers.getSigners();
-        const signLib = await (await hre.ethers.getContractFactory("SignMessageLib")).deploy();
+    const setupTests = createFixture(async () => {
+        const [user1, user2] = await ethers.getSigners();
+        const signLib = await (await ethers.getContractFactory("SignMessageLib")).deploy();
         const handler = await getExtensibleFallbackHandler();
         const handlerAddress = await handler.getAddress();
         const signerSafe = await getSafe({ owners: [user1.address], threshold: 1, fallbackHandler: handlerAddress });
@@ -28,8 +29,8 @@ describe("ExtensibleFallbackHandler", () => {
             fallbackHandler: handlerAddress,
         });
         const preconfiguredValidator = await getExtensibleFallbackHandler(await otherSafe.getAddress());
-        const testVerifier = await (await hre.ethers.getContractFactory("TestSafeSignatureVerifier")).deploy();
-        const testMarshalLib = await (await hre.ethers.getContractFactory("TestMarshalLib")).deploy();
+        const testVerifier = await (await ethers.getContractFactory("TestSafeSignatureVerifier")).deploy();
+        const testMarshalLib = await (await ethers.getContractFactory("TestMarshalLib")).deploy();
         const killLib = await killLibContract(user1);
 
         const mirrorSource = `
@@ -181,21 +182,23 @@ describe("ExtensibleFallbackHandler", () => {
                 const { safe, user1, erc1155 } = await setupTests();
                 await erc1155.mintBatch(await user1.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-                await expect(erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await safe.getAddress(), 1, 100, "0x")).to
-                    .not.be.reverted;
+                await expect(
+                    erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await safe.getAddress(), 1, 100, "0x"),
+                ).to.not.be.revert(ethers);
                 await expect(
                     erc1155
                         .connect(user1)
                         .safeBatchTransferFrom(await user1.getAddress(), await safe.getAddress(), [2, 3], [100, 100], "0x"),
-                ).to.not.be.reverted;
+                ).to.not.be.revert(ethers);
             });
 
             it("should revert when tokens are transferred directly to the handler", async () => {
                 const { handler, user1, erc1155 } = await setupTests();
                 await erc1155.mintBatch(await user1.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-                await expect(erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await handler.getAddress(), 1, 100, "0x")).to
-                    .be.reverted;
+                await expect(
+                    erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await handler.getAddress(), 1, 100, "0x"),
+                ).to.be.revert(ethers);
                 await expect(
                     erc1155
                         .connect(user1)
@@ -227,7 +230,7 @@ describe("ExtensibleFallbackHandler", () => {
                     erc721
                         .connect(user1)
                         ["safeTransferFrom(address,address,uint256)"](await user1.getAddress(), await safe.getAddress(), 1),
-                ).to.not.be.reverted;
+                ).to.not.be.revert(ethers);
             });
 
             it("should revert when tokens are transferred directly to the handler", async () => {
@@ -330,7 +333,7 @@ describe("ExtensibleFallbackHandler", () => {
                 };
 
                 // Confirm method handler is not set (call should revert)
-                await expect(user1.call(tx)).to.be.reverted;
+                await expect(user1.call(tx)).to.be.revert(ethers);
 
                 // Setup the method handler
                 await executeContractCallWithSigners(
@@ -528,7 +531,7 @@ describe("ExtensibleFallbackHandler", () => {
             it("should revert if called directly", async () => {
                 const { handler } = await setupTests();
                 const dataHash = ethers.keccak256("0xbaddad");
-                await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.reverted;
+                await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.revert(ethers);
             });
 
             it("should revert if message was not signed", async () => {
@@ -540,7 +543,7 @@ describe("ExtensibleFallbackHandler", () => {
             it("should revert if signature is not valid", async () => {
                 const { validator } = await setupTests();
                 const dataHash = ethers.keccak256("0xbaddad");
-                await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.reverted;
+                await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.revert(ethers);
             });
 
             it("should revert through default flow if signature is short", async () => {
@@ -600,7 +603,7 @@ describe("ExtensibleFallbackHandler", () => {
                 };
 
                 const signatures = buildSignatureBytes([user1Signature, user2Signature]);
-                await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.reverted;
+                await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.revert(ethers);
             });
 
             it("should send EIP-712 context to custom verifier", async () => {
@@ -641,7 +644,7 @@ describe("ExtensibleFallbackHandler", () => {
                         typeHash.slice(2) +
                         "00000000000000000000000000000000000000000000000000000000000000e0" +
                         "0000000000000000000000000000000000000000000000000000000000000140" +
-                        hre.ethers.AbiCoder.defaultAbiCoder().encode(["bytes"], [encodeData]).slice(66) +
+                        ethers.AbiCoder.defaultAbiCoder().encode(["bytes"], [encodeData]).slice(66) +
                         "0000000000000000000000000000000000000000000000000000000000000004" +
                         "deadbeef00000000000000000000000000000000000000000000000000000000",
                 );
@@ -692,7 +695,7 @@ describe("ExtensibleFallbackHandler", () => {
                 const domainSeparator = ethers.keccak256("0xdeadbeef");
                 const typeHash = ethers.keccak256("0xbaddad");
                 // abi encode the message
-                const encodeData = hre.ethers.AbiCoder.defaultAbiCoder().encode(
+                const encodeData = ethers.AbiCoder.defaultAbiCoder().encode(
                     ["bytes32"],
                     [ethers.keccak256("0xbaddadbaddadbaddadbaddadbaddadbaddad")],
                 );

@@ -1,12 +1,12 @@
 import { expect } from "chai";
-import { ethers, deployments } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getTokenCallbackHandler } from "../utils/setup";
+import { getSafe, getTokenCallbackHandler, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("TokenCallbackHandler", () => {
-    const setupTests = deployments.createFixture(async () => {
-        await deployments.fixture();
-
+    const setupTests = createFixture(async () => {
         const handler = await getTokenCallbackHandler();
         const [user] = await ethers.getSigners();
         const safe = await getSafe({ owners: [user.address], threshold: 1, fallbackHandler: await handler.getAddress() });
@@ -43,11 +43,12 @@ describe("TokenCallbackHandler", () => {
             const { safe, user, erc1155 } = await setupTests();
             await erc1155.mintBatch(await user.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-            await expect(erc1155.connect(user).safeTransferFrom(await user.getAddress(), await safe.getAddress(), 1, 100, "0x")).to.not.be
-                .reverted;
+            await expect(
+                erc1155.connect(user).safeTransferFrom(await user.getAddress(), await safe.getAddress(), 1, 100, "0x"),
+            ).to.not.be.revert(ethers);
             await expect(
                 erc1155.connect(user).safeBatchTransferFrom(await user.getAddress(), await safe.getAddress(), [2, 3], [100, 100], "0x"),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
 
         it("should revert when tokens are transferred directly to the handler", async () => {
@@ -70,8 +71,9 @@ describe("TokenCallbackHandler", () => {
             await erc1155.mint(await user.getAddress(), 1, 100, "0x");
             await erc1155.trickFallbackHandler(await handler.getAddress());
 
-            await expect(erc1155.connect(user).safeTransferFrom(await user.getAddress(), await handler.getAddress(), 1, 100, "0x")).to.not
-                .be.reverted;
+            await expect(
+                erc1155.connect(user).safeTransferFrom(await user.getAddress(), await handler.getAddress(), 1, 100, "0x"),
+            ).to.not.be.revert(ethers);
         });
     });
 
@@ -96,7 +98,7 @@ describe("TokenCallbackHandler", () => {
 
             await expect(
                 erc721.connect(user)["safeTransferFrom(address,address,uint256)"](await user.getAddress(), await safe.getAddress(), 1),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
 
         it("should revert when tokens are transferred directly to the handler", async () => {
@@ -120,7 +122,7 @@ describe("TokenCallbackHandler", () => {
                 erc721
                     .connect(user)
                     ["safeTransferFrom(address,address,uint256,bytes)"](await user.getAddress(), await handler.getAddress(), 1, "0x"),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
     });
 

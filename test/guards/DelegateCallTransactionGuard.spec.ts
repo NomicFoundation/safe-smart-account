@@ -1,17 +1,18 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe } from "../utils/setup";
-import { buildContractCall, executeContractCallWithSigners } from "../../src/utils/execution";
-import { AddressOne } from "../../src/utils/constants";
+import { getSafe, createFixture } from "../utils/setup.js";
+import { buildContractCall, executeContractCallWithSigners } from "../../src/utils/execution.js";
+import { AddressOne } from "../../src/utils/constants.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("DelegateCallTransactionGuard", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const signers = await ethers.getSigners();
         const [user1] = signers;
         const safe = await getSafe({ owners: [user1.address] });
-        const guardFactory = await hre.ethers.getContractFactory("DelegateCallTransactionGuard");
+        const guardFactory = await ethers.getContractFactory("DelegateCallTransactionGuard");
         const guard = await guardFactory.deploy(AddressZero);
         const guardAddress = await guard.getAddress();
         await executeContractCallWithSigners(safe, safe, "setGuard", [guardAddress], [user1]);
@@ -47,7 +48,7 @@ describe("DelegateCallTransactionGuard", () => {
                     data: "0xbaddad",
                     value: 1,
                 }),
-            ).to.be.reverted;
+            ).to.be.revert(ethers);
         });
     });
 

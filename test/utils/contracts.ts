@@ -1,5 +1,5 @@
-import { Signer, BaseContract } from "ethers";
-import { deployContractFromSource } from "./setup";
+import { type Signer, BaseContract } from "ethers";
+import { deployContractFromSource } from "./setup.js";
 
 export const killLibSource = `
 contract Test {
@@ -96,7 +96,7 @@ export const revertingSignatureValidatorContract = async (deployer: Signer) => {
 
 /**
  * Retrieves the sender address from the contract runner.
- * It is useful when using methods like `hre.ethers.getContractAt` which automatically attach
+ * It is useful when using methods like `ethers.getContractAt` which automatically attach
  * the contract to a runner.
  *
  * @param contract - The contract object.

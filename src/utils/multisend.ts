@@ -1,6 +1,6 @@
-import { ethers, BigNumberish } from "ethers";
-import { buildContractCall, MetaTransaction, SafeTransaction } from "./execution";
-import { MultiSend } from "../../typechain-types";
+import { ethers, type BigNumberish } from "ethers";
+import { buildContractCall, type MetaTransaction, type SafeTransaction } from "./execution.js";
+import { type MultiSend } from "../../typechain-types/index.js";
 
 const encodeMetaTransaction = (tx: MetaTransaction): string => {
     const data = ethers.getBytes(tx.data);

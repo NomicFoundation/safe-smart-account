@@ -1,11 +1,80 @@
-import hre, { deployments } from "hardhat";
-import { Contract, Signer, ethers } from "ethers";
+import hre from "hardhat";
+import { Contract, type Signer } from "ethers";
 import { AddressZero } from "@ethersproject/constants";
 import solc from "solc";
-import { logGas } from "../../src/utils/execution";
-import { safeContractUnderTest } from "./config";
-import { getRandomIntAsString } from "./numbers";
-import { MockContract, Safe, SafeL2 } from "../../typechain-types";
+import { logGas } from "../../src/utils/execution.js";
+import { safeContractUnderTest } from "./config.js";
+import { getRandomIntAsString } from "./numbers.js";
+import { type MockContract, type Safe, type SafeL2 } from "../../typechain-types/index.js";
+import { loadAndExecuteDeploymentsFromFiles } from "../../rocketh/environment.js";
+
+type Connection = Awaited<ReturnType<typeof hre.network.getOrCreate>>;
+type DeploymentEnvironment = Awaited<ReturnType<typeof loadAndExecuteDeploymentsFromFiles>>;
+
+/**
+ * The `ethers` of whichever network the fixture in scope is running against. A binding rather than
+ * a constant because most of the suite runs on the default network while the secp256r1 tests run on
+ * `fusaka`, and these helpers have to follow whichever is in play.
+ */
+let ethers: Connection["ethers"] = (await hre.network.getOrCreate()).ethers;
+
+const connections = new Map<string, Promise<Connection>>();
+const deploymentEnvironments = new Map<string, DeploymentEnvironment>();
+
+const getConnection = (network?: string): Promise<Connection> => {
+    const key = network ?? "default";
+    let connection = connections.get(key);
+    if (connection === undefined) {
+        connection = network === undefined ? hre.network.getOrCreate() : hre.network.create({ network });
+        connections.set(key, connection);
+    }
+    return connection;
+};
+
+/** The deployments belonging to the fixture currently in scope. */
+let deploymentEnvironment: DeploymentEnvironment | undefined;
+
+export const getDeployment = async (name: string) => {
+    if (deploymentEnvironment === undefined) {
+        throw new Error(`No deployments available: "${name}" was requested outside of a createFixture() setup.`);
+    }
+    const deployment = deploymentEnvironment.get(name);
+
+    // v1 handed back checksummed addresses. rocketh stores them lowercase, and the tests compare
+    // them against values read back out of contracts, which ethers always checksums — so
+    // re-checksum here rather than at every comparison.
+    return { ...deployment, address: ethers.getAddress(deployment.address) };
+};
+
+/**
+ * Replaces `deployments.createFixture()`. Runs every deploy script, then the caller's setup, and
+ * snapshots the result so that each test starts from the same chain state.
+ *
+ * Pass `network` to run against something other than the default network. Note that the two lines
+ * pointing the helpers at the right connection sit outside the fixture body deliberately:
+ * `loadFixture` runs that body once and replays the snapshot thereafter, so anything that has to
+ * hold for every call belongs out here.
+ */
+export const createFixture = <T>(setup: () => Promise<T>, options?: { network?: string }): (() => Promise<T>) => {
+    const key = options?.network ?? "default";
+
+    const fixture = async () => {
+        const { provider } = await getConnection(options?.network);
+        deploymentEnvironments.set(key, await loadAndExecuteDeploymentsFromFiles({ provider }));
+        deploymentEnvironment = deploymentEnvironments.get(key);
+        return setup();
+    };
+
+    return async () => {
+        const connection = await getConnection(options?.network);
+        ({ ethers } = connection);
+        deploymentEnvironment = deploymentEnvironments.get(key);
+        const result = await connection.networkHelpers.loadFixture(fixture);
+        ({ ethers } = connection);
+        deploymentEnvironment = deploymentEnvironments.get(key);
+        return result;
+    };
+};
 
 type SafeSingleton = {
     readonly singleton?: Safe | SafeL2;
@@ -27,74 +96,74 @@ type LogGas = {
 type GetSafeParameters = SafeSingleton & SafeWithSetupConfig & LogGas;
 
 export const defaultTokenCallbackHandlerDeployment = async () => {
-    return deployments.get("TokenCallbackHandler");
+    return getDeployment("TokenCallbackHandler");
 };
 
 export const getSafeSingleton = async () => {
     const safeContractName = safeContractUnderTest();
-    const { address } = await deployments.get(safeContractName);
-    const safe = await hre.ethers.getContractAt(safeContractName, address);
+    const { address } = await getDeployment(safeContractName);
+    const safe = await ethers.getContractAt(safeContractName, address);
     return safe as unknown as Safe | SafeL2;
 };
 
 export const getSafeL1Singleton = async (): Promise<Safe> => {
-    const safeSingletonDeployment = await deployments.get("Safe");
-    const Safe = await hre.ethers.getContractAt("Safe", safeSingletonDeployment.address);
+    const safeSingletonDeployment = await getDeployment("Safe");
+    const Safe = await ethers.getContractAt("Safe", safeSingletonDeployment.address);
     return Safe;
 };
 
 export const getSafeL2Singleton = async (): Promise<SafeL2> => {
-    const safeSingletonDeployment = await deployments.get("SafeL2");
-    const Safe = await hre.ethers.getContractAt("SafeL2", safeSingletonDeployment.address);
+    const safeSingletonDeployment = await getDeployment("SafeL2");
+    const Safe = await ethers.getContractAt("SafeL2", safeSingletonDeployment.address);
     return Safe;
 };
 
 export const getSafeSingletonAt = async (address: string) => {
-    const safe = await hre.ethers.getContractAt(safeContractUnderTest(), address);
+    const safe = await ethers.getContractAt(safeContractUnderTest(), address);
     return safe as unknown as Safe | SafeL2;
 };
 
 export const getFactory = async (address?: string) => {
     if (!address) {
-        const factoryDeployment = await deployments.get("SafeProxyFactory");
+        const factoryDeployment = await getDeployment("SafeProxyFactory");
         address = factoryDeployment.address;
     }
 
-    const Factory = await hre.ethers.getContractAt("SafeProxyFactory", address);
+    const Factory = await ethers.getContractAt("SafeProxyFactory", address);
     return Factory;
 };
 
 export const getSimulateTxAccessor = async () => {
-    const SimulateTxAccessor = await hre.ethers.getContractAt("SimulateTxAccessor", (await deployments.get("SimulateTxAccessor")).address);
+    const SimulateTxAccessor = await ethers.getContractAt("SimulateTxAccessor", (await getDeployment("SimulateTxAccessor")).address);
     return SimulateTxAccessor;
 };
 
 export const getMultiSend = async () => {
-    const MultiSend = await hre.ethers.getContractAt("MultiSend", (await deployments.get("MultiSend")).address);
+    const MultiSend = await ethers.getContractAt("MultiSend", (await getDeployment("MultiSend")).address);
     return MultiSend;
 };
 
 export const getMultiSendCallOnly = async () => {
-    const MultiSend = await hre.ethers.getContractAt("MultiSendCallOnly", (await deployments.get("MultiSendCallOnly")).address);
+    const MultiSend = await ethers.getContractAt("MultiSendCallOnly", (await getDeployment("MultiSendCallOnly")).address);
     return MultiSend;
 };
 
 export const getCreateCall = async () => {
-    const CreateCall = await hre.ethers.getContractAt("CreateCall", (await deployments.get("CreateCall")).address);
+    const CreateCall = await ethers.getContractAt("CreateCall", (await getDeployment("CreateCall")).address);
     return CreateCall;
 };
 
 export const migrationContractFactory = async () => {
-    return await hre.ethers.getContractFactory("Migration");
+    return await ethers.getContractFactory("Migration");
 };
 
 export const safeMigrationContract = async () => {
-    const safeMigration = await hre.ethers.getContractAt("SafeMigration", (await deployments.get("SafeMigration")).address);
+    const safeMigration = await ethers.getContractAt("SafeMigration", (await getDeployment("SafeMigration")).address);
     return safeMigration;
 };
 
 export const getMock = async (): Promise<MockContract> => {
-    const contractFactory = await hre.ethers.getContractFactory("MockContract");
+    const contractFactory = await ethers.getContractFactory("MockContract");
     const contract = await contractFactory.deploy();
 
     return contract;
@@ -125,7 +194,7 @@ export const getEip7702SafeTemplateWithSingleton = async (singleton: Safe | Safe
         address: await singleton.getAddress(),
         // Since we are using the authority to set the delegation on itself, we need to sign it for the subsequent
         // nonce, as the current one is used for the transaction execution.
-        nonce: (await hre.ethers.provider.getTransactionCount(authority)) + 1,
+        nonce: (await ethers.provider.getTransactionCount(authority)) + 1,
     });
     const delegation = await authority.sendTransaction({ to: authority, authorizationList: [authorization] });
     await delegation.wait();
@@ -179,28 +248,28 @@ export const getTokenCallbackHandler = async (address?: string) => {
         address = tokenCallbackHandlerDeployment.address;
     }
 
-    const tokenCallbackHandler = await hre.ethers.getContractAt("TokenCallbackHandler", address);
+    const tokenCallbackHandler = await ethers.getContractAt("TokenCallbackHandler", address);
     return tokenCallbackHandler;
 };
 
 export const getCompatFallbackHandler = async (address?: string) => {
     if (!address) {
-        const fallbackHandlerDeployment = await deployments.get("CompatibilityFallbackHandler");
+        const fallbackHandlerDeployment = await getDeployment("CompatibilityFallbackHandler");
         address = fallbackHandlerDeployment.address;
     }
 
-    const fallbackHandler = await hre.ethers.getContractAt("CompatibilityFallbackHandler", address);
+    const fallbackHandler = await ethers.getContractAt("CompatibilityFallbackHandler", address);
 
     return fallbackHandler;
 };
 
 export const getExtensibleFallbackHandler = async (address?: string) => {
     if (!address) {
-        const extensibleFallbackHandlerAddress = await deployments.get("ExtensibleFallbackHandler");
+        const extensibleFallbackHandlerAddress = await getDeployment("ExtensibleFallbackHandler");
         address = extensibleFallbackHandlerAddress.address;
     }
 
-    const extensibleFallbackHandler = await hre.ethers.getContractAt("ExtensibleFallbackHandler", address);
+    const extensibleFallbackHandler = await ethers.getContractAt("ExtensibleFallbackHandler", address);
 
     return extensibleFallbackHandler;
 };
@@ -212,7 +281,7 @@ export const getSafeProxyRuntimeCode = async (): Promise<string> => {
 };
 
 export const getDelegateCaller = async () => {
-    const DelegateCaller = await hre.ethers.getContractFactory("DelegateCaller");
+    const DelegateCaller = await ethers.getContractFactory("DelegateCaller");
     return await DelegateCaller.deploy();
 };
 
@@ -260,7 +329,7 @@ export const compile = async (source: string) => {
     throw Error("No contract with bytecode");
 };
 
-export const deployContractFromSource = async (deployer: Signer, source: string): Promise<ethers.Contract> => {
+export const deployContractFromSource = async (deployer: Signer, source: string): Promise<Contract> => {
     const output = await compile(source);
     const transaction = await deployer.sendTransaction({ data: output.data, gasLimit: 6000000 });
     const receipt = await transaction.wait();
@@ -273,8 +342,8 @@ export const deployContractFromSource = async (deployer: Signer, source: string)
 };
 
 export const getSignMessageLib = async () => {
-    const SignMessageLibDeployment = await deployments.get("SignMessageLib");
-    const SignMessageLib = await hre.ethers.getContractAt("SignMessageLib", SignMessageLibDeployment.address);
+    const SignMessageLibDeployment = await getDeployment("SignMessageLib");
+    const SignMessageLib = await ethers.getContractAt("SignMessageLib", SignMessageLibDeployment.address);
 
     return SignMessageLib;
 };

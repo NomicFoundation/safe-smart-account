@@ -1,8 +1,10 @@
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BigNumberish } from "ethers";
-import { buildSafeTransaction } from "../src/utils/execution";
-import { benchmark } from "./utils/setup";
+import { type BigNumberish } from "ethers";
+import { buildSafeTransaction } from "../src/utils/execution.js";
+import { benchmark } from "./utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 const testTarget = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 

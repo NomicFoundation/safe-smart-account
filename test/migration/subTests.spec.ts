@@ -1,10 +1,17 @@
-import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { AddressOne } from "../../src/utils/constants";
-import { buildSafeTransaction, executeContractCallWithSigners, executeTxWithSigners, MetaTransaction } from "../../src/utils/execution";
-import { buildMultiSendSafeTx } from "../../src/utils/multisend";
-import { MockContract, MultiSend, Safe } from "../../typechain-types";
+import hre from "hardhat";
+import { AddressOne } from "../../src/utils/constants.js";
+import {
+    buildSafeTransaction,
+    executeContractCallWithSigners,
+    executeTxWithSigners,
+    type MetaTransaction,
+} from "../../src/utils/execution.js";
+import { buildMultiSendSafeTx } from "../../src/utils/multisend.js";
+import { type MockContract, type MultiSend, type Safe } from "../../typechain-types/index.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 interface TestSetup {
     migratedSafe: Safe;
@@ -102,8 +109,8 @@ export const verificationTests = (setupTests: () => Promise<TestSetup>) => {
             const mockAddress = await mock.getAddress();
 
             await user1.sendTransaction({ to: migratedSafeAddress, value: ethers.parseEther("1") });
-            const userBalance = await hre.ethers.provider.getBalance(user2.address);
-            expect(await hre.ethers.provider.getBalance(migratedSafeAddress)).to.eq(ethers.parseEther("1"));
+            const userBalance = await ethers.provider.getBalance(user2.address);
+            expect(await ethers.provider.getBalance(migratedSafeAddress)).to.eq(ethers.parseEther("1"));
 
             const txs: MetaTransaction[] = [
                 buildSafeTransaction({ to: user2.address, value: ethers.parseEther("1"), nonce: 0 }),
@@ -112,8 +119,8 @@ export const verificationTests = (setupTests: () => Promise<TestSetup>) => {
             const safeTx = await buildMultiSendSafeTx(multiSend, txs, await migratedSafe.nonce());
             await expect(executeTxWithSigners(migratedSafe, safeTx, [user1])).to.emit(migratedSafe, "ExecutionSuccess");
 
-            expect(await hre.ethers.provider.getBalance(migratedSafeAddress)).to.eq(ethers.parseEther("0"));
-            expect(await hre.ethers.provider.getBalance(user2.address)).to.eq(userBalance + ethers.parseEther("1"));
+            expect(await ethers.provider.getBalance(migratedSafeAddress)).to.eq(ethers.parseEther("0"));
+            expect(await ethers.provider.getBalance(user2.address)).to.eq(userBalance + ethers.parseEther("1"));
             expect(await mock.invocationCountForCalldata("0xbaddad")).to.eq(1n);
         });
     });

@@ -1,12 +1,13 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { getSafeSingleton, getSafe } from "../utils/setup";
-import { killLibContract } from "../utils/contracts";
+import hre from "hardhat";
+import { getSafeSingleton, getSafe, createFixture } from "../utils/setup.js";
+import { killLibContract } from "../utils/contracts.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("StorageAccessible", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const [user1, user2] = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const [user1, user2] = await ethers.getSigners();
         const killLib = await killLibContract(user1);
         return {
             safe: await getSafe({ owners: [user1.address, user2.address], threshold: 1 }),
@@ -38,14 +39,18 @@ describe("StorageAccessible", () => {
             const { safe, killLib } = await setupTests();
             const killLibAddress = await killLib.getAddress();
 
-            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("killme"))).to.be.reverted;
+            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("killme"))).to.be.revert(
+                ethers,
+            );
         });
 
         it("should revert the revert with message", async () => {
             const { safe, killLib } = await setupTests();
             const killLibAddress = await killLib.getAddress();
 
-            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("trever"))).to.be.reverted;
+            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("trever"))).to.be.revert(
+                ethers,
+            );
         });
 
         it("should return estimate in revert", async () => {
@@ -55,7 +60,7 @@ describe("StorageAccessible", () => {
 
             await expect(
                 safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("estimate", [safeAddress, "0x"])),
-            ).to.be.reverted;
+            ).to.be.revert(ethers);
         });
     });
 });

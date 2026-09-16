@@ -1,12 +1,13 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafeTemplate } from "../utils/setup";
+import { getSafeTemplate, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("HandlerContext", () => {
-    const setup = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const TestHandler = await hre.ethers.getContractFactory("TestHandler");
+    const setup = createFixture(async () => {
+        const TestHandler = await ethers.getContractFactory("TestHandler");
         const handler = await TestHandler.deploy();
         const signers = await ethers.getSigners();
         return {

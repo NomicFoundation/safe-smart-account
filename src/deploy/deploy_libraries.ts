@@ -1,44 +1,38 @@
-import { DeployFunction } from "hardhat-deploy/types";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { artifacts, deployScript } from "../../rocketh/deploy.js";
 
-const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployer: deployerAccount } = await hre.getNamedAccounts();
+export default deployScript(
+    async ({ deploy, namedAccounts }) => {
+        const { deployer } = namedAccounts;
 
-    await hre.deployments.deploy("CreateCall", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("CreateCall", {
+            account: deployer,
+            artifact: artifacts.CreateCall,
+            args: [],
+        });
 
-    await hre.deployments.deploy("MultiSend", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("MultiSend", {
+            account: deployer,
+            artifact: artifacts.MultiSend,
+            args: [],
+        });
 
-    await hre.deployments.deploy("MultiSendCallOnly", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("MultiSendCallOnly", {
+            account: deployer,
+            artifact: artifacts.MultiSendCallOnly,
+            args: [],
+        });
 
-    await hre.deployments.deploy("SignMessageLib", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("SignMessageLib", {
+            account: deployer,
+            artifact: artifacts.SignMessageLib,
+            args: [],
+        });
 
-    await hre.deployments.deploy("SafeToL2Setup", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
-};
-
-deploy.tags = ["libraries", "l2-suite", "main-suite"];
-export default deploy;
+        await deploy("SafeToL2Setup", {
+            account: deployer,
+            artifact: artifacts.SafeToL2Setup,
+            args: [],
+        });
+    },
+    { tags: ["libraries", "l2-suite", "main-suite"] },
+);

@@ -1,7 +1,9 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { compile, getCreateCall, getSafe } from "../utils/setup";
-import { buildContractCall, executeTx, safeApproveHash } from "../../src/utils/execution";
+import hre from "hardhat";
+import { compile, getCreateCall, getSafe, createFixture } from "../utils/setup.js";
+import { buildContractCall, executeTx, safeApproveHash } from "../../src/utils/execution.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 const CONTRACT_SOURCE = `
 contract Test {
@@ -16,10 +18,9 @@ contract Test {
 }`;
 
 describe("CreateCall", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const testContract = await compile(CONTRACT_SOURCE);
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         return {
             safe: await getSafe({ owners: [user1.address] }),
@@ -96,7 +97,7 @@ describe("CreateCall", () => {
             } = await setupTests();
             const safeAddress = await safe.getAddress();
             await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
 
             const safeEthereumNonce = await ethers.provider.getTransactionCount(safeAddress);
             const address = ethers.getCreateAddress({ from: safeAddress, nonce: safeEthereumNonce });
@@ -115,8 +116,8 @@ describe("CreateCall", () => {
                 .and.to.emit(safeCreateCall, "ContractCreation")
                 .withArgs(address);
 
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("0"));
-            await expect(await hre.ethers.provider.getBalance(address)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("0"));
+            await expect(await ethers.provider.getBalance(address)).to.eq(ethers.parseEther("1"));
             const newContract = new ethers.Contract(address, testContract.interface, user1);
             expect(await newContract.creator()).to.be.eq(safeAddress);
         });
@@ -191,7 +192,7 @@ describe("CreateCall", () => {
             } = await setupTests();
             const safeAddress = await safe.getAddress();
             await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
 
             const address = ethers.getCreate2Address(safeAddress, salt, ethers.keccak256(testContract.data));
 
@@ -209,8 +210,8 @@ describe("CreateCall", () => {
                 .and.to.emit(safeCreateCall, "ContractCreation")
                 .withArgs(address);
 
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("0"));
-            await expect(await hre.ethers.provider.getBalance(address)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("0"));
+            await expect(await ethers.provider.getBalance(address)).to.eq(ethers.parseEther("1"));
             const newContract = new ethers.Contract(address, testContract.interface, user1);
             expect(await newContract.creator()).to.be.eq(safeAddress);
         });

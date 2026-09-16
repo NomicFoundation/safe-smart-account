@@ -1,17 +1,19 @@
+import hre from "hardhat";
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
-import { BigNumberish } from "ethers";
-import { getTokenCallbackHandler, getSafe } from "../../test/utils/setup";
+import { type BigNumberish } from "ethers";
+import { getTokenCallbackHandler, getSafe, createFixture } from "../../test/utils/setup.js";
 import {
     logGas,
     executeTx,
-    SafeTransaction,
+    type SafeTransaction,
     safeSignTypedData,
-    SafeSignature,
+    type SafeSignature,
     executeContractCallWithSigners,
-} from "../../src/utils/execution";
+} from "../../src/utils/execution.js";
 import { AddressZero } from "@ethersproject/constants";
-import { Safe, SafeL2 } from "../../typechain-types";
+import { type Safe, type SafeL2 } from "../../typechain-types/index.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 type SafeSingleton = Safe | SafeL2;
 
@@ -44,10 +46,9 @@ export const configs = [
 ];
 
 export const setupBenchmarkContracts = (benchmarkFixture?: () => Promise<any>, logGasUsage?: boolean) => {
-    return deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    return createFixture(async () => {
         const additions = benchmarkFixture ? await benchmarkFixture() : undefined;
-        const guardFactory = await hre.ethers.getContractFactory("DelegateCallTransactionGuard");
+        const guardFactory = await ethers.getContractFactory("DelegateCallTransactionGuard");
         const guard = additions?.guard ?? (await guardFactory.deploy(AddressZero));
         const guardAddress = await guard.getAddress();
         const targets: SafeSingleton[] = [];

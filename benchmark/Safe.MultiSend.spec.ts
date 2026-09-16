@@ -1,8 +1,10 @@
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BigNumberish } from "ethers";
-import { benchmark, Contracts } from "./utils/setup";
-import { buildMultiSendSafeTx } from "../src/utils/multisend";
+import { type BigNumberish } from "ethers";
+import { benchmark, type Contracts } from "./utils/setup.js";
+import { buildMultiSendSafeTx } from "../src/utils/multisend.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 benchmark("MultiSend", async () => {
     const [, , , , user5] = await ethers.getSigners();

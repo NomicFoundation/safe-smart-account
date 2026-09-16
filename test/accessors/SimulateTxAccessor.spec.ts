@@ -1,12 +1,13 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
-import { deployContractFromSource, getSimulateTxAccessor, getSafe, getCompatFallbackHandler } from "../utils/setup";
-import { buildContractCall } from "../../src/utils/execution";
+import hre from "hardhat";
+import { deployContractFromSource, getSimulateTxAccessor, getSafe, getCompatFallbackHandler, createFixture } from "../utils/setup.js";
+import { buildContractCall } from "../../src/utils/execution.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("SimulateTxAccessor", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const accessor = await getSimulateTxAccessor();
         const source = `
@@ -39,15 +40,15 @@ describe("SimulateTxAccessor", () => {
             const tx = await buildContractCall(interactor, "sendAndReturnBalance", [user1.address, 0], 0);
             const accessorAddress = accessor.getAddress();
 
-            const code = await hre.ethers.provider.getCode(accessorAddress);
+            const code = await ethers.provider.getCode(accessorAddress);
             await expect(accessor.simulate(tx.to, tx.value, tx.data, tx.operation)).to.be.revertedWith(
                 "SimulateTxAccessor should only be called via delegatecall",
             );
 
-            expect(await hre.ethers.provider.getCode(accessorAddress)).to.be.eq(code);
+            expect(await ethers.provider.getCode(accessorAddress)).to.be.eq(code);
         });
 
-        it("simulate call", async () => {
+        it("simulate call [@skip-on-coverage]", async () => {
             const { safe, accessor, simulator, signers } = await setupTests();
             const [user1] = signers;
             const accessorAddress = await accessor.getAddress();
@@ -66,7 +67,7 @@ describe("SimulateTxAccessor", () => {
             const accessorAddress = await accessor.getAddress();
             const safeAddress = await safe.getAddress();
             await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
-            const userBalance = await hre.ethers.provider.getBalance(user2.address);
+            const userBalance = await ethers.provider.getBalance(user2.address);
             const tx = await buildContractCall(interactor, "sendAndReturnBalance", [user2.address, ethers.parseEther("1")], 0, true);
             const simulationData = accessor.interface.encodeFunctionData("simulate", [tx.to, tx.value, tx.data, tx.operation]);
             const accessibleData = await simulator.simulate.staticCall(accessorAddress, simulationData);

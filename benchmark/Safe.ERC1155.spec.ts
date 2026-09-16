@@ -1,8 +1,10 @@
+import hre from "hardhat";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BigNumberish } from "ethers";
-import { buildSafeTransaction } from "../src/utils/execution";
-import { benchmark, Contracts } from "./utils/setup";
+import { type BigNumberish } from "ethers";
+import { buildSafeTransaction } from "../src/utils/execution.js";
+import { benchmark, type Contracts } from "./utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 benchmark("ERC1155", async () => {
     const [, , , , user5] = await ethers.getSigners();

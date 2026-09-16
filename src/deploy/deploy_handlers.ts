@@ -1,30 +1,26 @@
-import { DeployFunction } from "hardhat-deploy/types";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { artifacts, deployScript } from "../../rocketh/deploy.js";
 
-const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployer: deployerAccount } = await hre.getNamedAccounts();
+export default deployScript(
+    async ({ deploy, namedAccounts }) => {
+        const { deployer } = namedAccounts;
 
-    await hre.deployments.deploy("TokenCallbackHandler", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("TokenCallbackHandler", {
+            account: deployer,
+            artifact: artifacts.TokenCallbackHandler,
+            args: [],
+        });
 
-    await hre.deployments.deploy("CompatibilityFallbackHandler", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
+        await deploy("CompatibilityFallbackHandler", {
+            account: deployer,
+            artifact: artifacts.CompatibilityFallbackHandler,
+            args: [],
+        });
 
-    await hre.deployments.deploy("ExtensibleFallbackHandler", {
-        from: deployerAccount,
-        args: [],
-        log: true,
-        deterministicDeployment: true,
-    });
-};
-
-deploy.tags = ["handlers", "l2-suite", "main-suite"];
-export default deploy;
+        await deploy("ExtensibleFallbackHandler", {
+            account: deployer,
+            artifact: artifacts.ExtensibleFallbackHandler,
+            args: [],
+        });
+    },
+    { tags: ["handlers", "l2-suite", "main-suite"] },
+);

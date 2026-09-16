@@ -1,4 +1,4 @@
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { type HardhatRuntimeEnvironment } from "hardhat/types";
 import fs from "fs";
 
 type StateVariable = {
@@ -46,20 +46,27 @@ export const EXPECTED_SAFE_STORAGE_LAYOUT: StateVariable[] = [
 ];
 
 export const getContractStorageLayout = async (hre: HardhatRuntimeEnvironment, smartContractName: string) => {
-    const { sourceName, contractName } = await hre.artifacts.readArtifact(smartContractName);
+    const { sourceName, inputSourceName, contractName } = await hre.artifacts.readArtifact(smartContractName);
+    // Hardhat 3 compiles under a source name of its own, which is what appears in the build info.
+    const buildInfoSourceName = inputSourceName ?? sourceName;
 
     const stateVariables: StateVariable[] = [];
 
-    for (const artifactPath of await hre.artifacts.getBuildInfoPaths()) {
-        const artifact = fs.readFileSync(artifactPath);
-        const artifactJsonABI = JSON.parse(artifact.toString());
+    // Build info is split in two in Hardhat 3 — the compiler input, and the output reached by id.
+    for (const buildInfoId of await hre.artifacts.getAllBuildInfoIds()) {
+        const outputPath = await hre.artifacts.getBuildInfoOutputPath(buildInfoId);
+        if (outputPath === undefined) {
+            continue;
+        }
+        const artifactJsonABI = JSON.parse(fs.readFileSync(outputPath).toString());
 
-        const artifactIncludesStorageLayout = artifactJsonABI?.output?.contracts?.[sourceName]?.[contractName]?.storageLayout;
+        const artifactIncludesStorageLayout = artifactJsonABI?.output?.contracts?.[buildInfoSourceName]?.[contractName]?.storageLayout;
         if (!artifactIncludesStorageLayout) {
             continue;
         }
 
-        const contractStateVariablesFromArtifact = artifactJsonABI.output.contracts[sourceName][contractName].storageLayout.storage;
+        const contractStateVariablesFromArtifact =
+            artifactJsonABI.output.contracts[buildInfoSourceName][contractName].storageLayout.storage;
         for (const stateVariable of contractStateVariablesFromArtifact) {
             stateVariables.push({
                 name: stateVariable.label,

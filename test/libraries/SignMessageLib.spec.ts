@@ -1,14 +1,15 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { getSafe, getSignMessageLib } from "../utils/setup";
-import { executeContractCallWithSigners, calculateSafeMessageHash } from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
+import { getSafe, getSignMessageLib, createFixture } from "../utils/setup.js";
+import { executeContractCallWithSigners, calculateSafeMessageHash } from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("SignMessageLib", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const lib = await getSignMessageLib();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1, user2] = signers;
         return {
             safe: await getSafe({ owners: [user1.address, user2.address] }),
@@ -20,7 +21,7 @@ describe("SignMessageLib", () => {
     describe("signMessage", () => {
         it("can only if msg.sender provides domain separator", async () => {
             const { lib } = await setupTests();
-            await expect(lib.signMessage("0xbaddad")).to.be.reverted;
+            await expect(lib.signMessage("0xbaddad")).to.be.revert(ethers);
         });
 
         it("should emit event", async () => {
@@ -62,20 +63,20 @@ describe("SignMessageLib", () => {
             const safeAddress = await safe.getAddress();
             const SIGNED_MESSAGES_MAPPING_STORAGE_SLOT = 7;
             const message = "no rugpull, funds must be safu";
-            const eip191MessageHash = hre.ethers.hashMessage(message);
-            const safeInternalMsgHash = calculateSafeMessageHash(safeAddress, hre.ethers.hashMessage(message), await chainId());
-            const expectedStorageSlot = hre.ethers.keccak256(
-                hre.ethers.AbiCoder.defaultAbiCoder().encode(
+            const eip191MessageHash = ethers.hashMessage(message);
+            const safeInternalMsgHash = calculateSafeMessageHash(safeAddress, ethers.hashMessage(message), await chainId());
+            const expectedStorageSlot = ethers.keccak256(
+                ethers.AbiCoder.defaultAbiCoder().encode(
                     ["bytes32", "uint256"],
                     [safeInternalMsgHash, SIGNED_MESSAGES_MAPPING_STORAGE_SLOT],
                 ),
             );
 
-            const masterCopyAddressBeforeSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 0);
-            const ownerCountBeforeSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 3);
-            const thresholdBeforeSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 4);
-            const nonceBeforeSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 5);
-            const msgStorageSlotBeforeSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), expectedStorageSlot);
+            const masterCopyAddressBeforeSigning = await ethers.provider.getStorage(await safe.getAddress(), 0);
+            const ownerCountBeforeSigning = await ethers.provider.getStorage(await safe.getAddress(), 3);
+            const thresholdBeforeSigning = await ethers.provider.getStorage(await safe.getAddress(), 4);
+            const nonceBeforeSigning = await ethers.provider.getStorage(await safe.getAddress(), 5);
+            const msgStorageSlotBeforeSigning = await ethers.provider.getStorage(await safe.getAddress(), expectedStorageSlot);
 
             expect(nonceBeforeSigning).to.be.eq(`0x${"0".padStart(64, "0")}`);
             expect(await safe.signedMessages(safeInternalMsgHash)).to.be.eq(0);
@@ -83,11 +84,11 @@ describe("SignMessageLib", () => {
 
             await executeContractCallWithSigners(safe, lib, "signMessage", [eip191MessageHash], [user1, user2], true);
 
-            const masterCopyAddressAfterSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 0);
-            const ownerCountAfterSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 3);
-            const thresholdAfterSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 4);
-            const nonceAfterSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), 5);
-            const msgStorageSlotAfterSigning = await hre.ethers.provider.getStorage(await safe.getAddress(), expectedStorageSlot);
+            const masterCopyAddressAfterSigning = await ethers.provider.getStorage(await safe.getAddress(), 0);
+            const ownerCountAfterSigning = await ethers.provider.getStorage(await safe.getAddress(), 3);
+            const thresholdAfterSigning = await ethers.provider.getStorage(await safe.getAddress(), 4);
+            const nonceAfterSigning = await ethers.provider.getStorage(await safe.getAddress(), 5);
+            const msgStorageSlotAfterSigning = await ethers.provider.getStorage(await safe.getAddress(), expectedStorageSlot);
 
             expect(await safe.signedMessages(safeInternalMsgHash)).to.be.eq(1);
             expect(masterCopyAddressBeforeSigning).to.be.eq(masterCopyAddressAfterSigning);

@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getMock, getSafe } from "../utils/setup";
+import { getMock, getSafe, createFixture } from "../utils/setup.js";
 import {
     buildContractCall,
     buildSafeTransaction,
@@ -10,21 +10,22 @@ import {
     executeContractCallWithSigners,
     executeTx,
     safeApproveHash,
-} from "../../src/utils/execution";
-import { chainId } from "../utils/encoding";
-import { getSenderAddressFromContractRunner } from "../utils/contracts";
+} from "../../src/utils/execution.js";
+import { chainId } from "../utils/encoding.js";
+import { getSenderAddressFromContractRunner } from "../utils/contracts.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("GuardManager", () => {
     const GUARD_STORAGE_SLOT = ethers.keccak256(ethers.toUtf8Bytes("guard_manager.guard.address"));
 
-    const setupWithTemplate = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupWithTemplate = createFixture(async () => {
         const validGuardMock = await getMock();
         const validGuardMockAddress = await validGuardMock.getAddress();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [, user2] = signers;
 
-        const guardContract = await hre.ethers.getContractAt("ITransactionGuard", AddressZero);
+        const guardContract = await ethers.getContractAt("ITransactionGuard", AddressZero);
         const guardEip165Calldata = guardContract.interface.encodeFunctionData("supportsInterface", ["0xe6d7a83a"]);
         await validGuardMock.givenCalldataReturnBool(guardEip165Calldata, true);
         const safe = await getSafe({ owners: [user2.address] });
@@ -44,7 +45,7 @@ describe("GuardManager", () => {
             } = await setupWithTemplate();
             const safe = await getSafe({ owners: [user1.address] });
 
-            await expect(executeContractCallWithSigners(safe, safe, "setGuard", [user2.address], [user1])).to.be.reverted;
+            await expect(executeContractCallWithSigners(safe, safe, "setGuard", [user2.address], [user1])).to.be.revert(ethers);
         });
 
         it("emits an event when the guard is changed", async () => {
@@ -77,7 +78,7 @@ describe("GuardManager", () => {
             await executeContractCallWithSigners(safe, safe, "setGuard", [validGuardMockAddress], [user1]);
 
             // Check guard
-            await expect(await hre.ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
+            await expect(await ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
                 "0x" + validGuardMockAddress.toLowerCase().slice(2).padStart(64, "0"),
             );
 
@@ -97,7 +98,7 @@ describe("GuardManager", () => {
             const safeMsgSender = getSenderAddressFromContractRunner(safe);
 
             // Check guard
-            await expect(await hre.ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
+            await expect(await ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
                 "0x" + validGuardMockAddress.toLowerCase().slice(2).padStart(64, "0"),
             );
 
@@ -110,12 +111,12 @@ describe("GuardManager", () => {
                 .withArgs(AddressZero);
 
             // Check guard
-            await expect(await hre.ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
+            await expect(await ethers.provider.getStorage(await safe.getAddress(), GUARD_STORAGE_SLOT)).to.be.eq(
                 "0x" + "".padStart(64, "0"),
             );
 
             expect(await validGuardMock.invocationCount()).to.be.eq(invocationCountBefore + 2n);
-            const guardInterface = (await hre.ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
+            const guardInterface = (await ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
             const checkTxData = guardInterface.encodeFunctionData("checkTransaction", [
                 safeTx.to,
                 safeTx.value,
@@ -153,7 +154,7 @@ describe("GuardManager", () => {
             const safeTx = buildSafeTransaction({ to: validGuardMockAddress, data: "0xbaddad42", nonce: await safe.nonce() });
             const signature = await safeApproveHash(user2, safe, safeTx);
             const signatureBytes = buildSignatureBytes([signature]);
-            const guardInterface = (await hre.ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
+            const guardInterface = (await ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
             const checkTxData = guardInterface.encodeFunctionData("checkTransaction", [
                 safeTx.to,
                 safeTx.value,
@@ -198,7 +199,7 @@ describe("GuardManager", () => {
             const safeTx = buildSafeTransaction({ to: validGuardMockAddress, data: "0xbaddad42", nonce: await safe.nonce() });
             const signature = await safeApproveHash(user2, safe, safeTx);
             const signatureBytes = buildSignatureBytes([signature]);
-            const guardInterface = (await hre.ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
+            const guardInterface = (await ethers.getContractAt("ITransactionGuard", validGuardMockAddress)).interface;
             const checkTxData = guardInterface.encodeFunctionData("checkTransaction", [
                 safeTx.to,
                 safeTx.value,

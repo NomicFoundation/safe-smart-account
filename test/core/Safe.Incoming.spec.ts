@@ -1,10 +1,11 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { deployContractFromSource, getSafe } from "../utils/setup";
+import hre from "hardhat";
+import { deployContractFromSource, getSafe, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("Safe", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const gasCappedTransferSource = `
             contract Test {
                 function transferEth(address payable safe) public payable returns (bool success) {
@@ -21,7 +22,7 @@ describe("Safe", () => {
                     require(success);
                 }
             }`;
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         return {
             safe: await getSafe({ owners: [user1.address] }),
@@ -37,7 +38,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
 
             // Notes: It is not possible to load storage + a call + emit event with 2300 gas
-            await expect(gasCappedTransferContract?.transferEth(safeAddress, { value: ethers.parseEther("1") })).to.be.reverted;
+            await expect(gasCappedTransferContract?.transferEth(safeAddress, { value: ethers.parseEther("1") })).to.be.revert(ethers);
         });
 
         it("should be able to receive ETH via send", async () => {
@@ -45,7 +46,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
 
             // Notes: It is not possible to load storage + a call + emit event with 2300 gas
-            await expect(gasCappedTransferContract?.sendEth(safeAddress, { value: ethers.parseEther("1") })).to.be.reverted;
+            await expect(gasCappedTransferContract?.sendEth(safeAddress, { value: ethers.parseEther("1") })).to.be.revert(ethers);
         });
 
         it("should be able to receive ETH via call", async () => {
@@ -60,7 +61,7 @@ describe("Safe", () => {
             )
                 .to.emit(safe, "SafeReceived")
                 .withArgs(callerAddress, ethers.parseEther("1"));
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
         });
 
         it("should be able to receive ETH via transaction", async () => {
@@ -78,7 +79,7 @@ describe("Safe", () => {
             )
                 .to.emit(safe, "SafeReceived")
                 .withArgs(user1.address, ethers.parseEther("1"));
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
         });
 
         it("should throw for incoming eth with data", async () => {
@@ -88,7 +89,7 @@ describe("Safe", () => {
             } = await setupTests();
             const safeAddress = await safe.getAddress();
 
-            await expect(user1.sendTransaction({ to: safeAddress, value: 23, data: "0xbaddad" })).to.be.revertedWithoutReason();
+            await expect(user1.sendTransaction({ to: safeAddress, value: 23, data: "0xbaddad" })).to.be.revertedWithoutReason(ethers);
         });
     });
 });
