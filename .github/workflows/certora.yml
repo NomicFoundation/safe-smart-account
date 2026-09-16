@@ -1,12 +1,16 @@
 name: certora
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
+    # TEMPORARY, FORK ONLY — revert before merging.
+    # The Certora Prover authenticates with `secrets.CERTORA_KEY`, which this fork does not have, so
+    # every run fails for reasons that have nothing to do with the change under review. The automatic
+    # triggers are commented out rather than deleted so that restoring them is a three-line revert.
+    # push:
+    #     branches:
+    #         - main
+    # pull_request:
+    #     branches:
+    #         - main
 
     workflow_dispatch:
 
