@@ -1,12 +1,13 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { getSafeSingleton, getSafe } from "../utils/setup.js";
+import hre from "hardhat";
+import { getSafeSingleton, getSafe, createFixture } from "../utils/setup.js";
 import { killLibContract } from "../utils/contracts.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("StorageAccessible", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const [user1, user2] = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const [user1, user2] = await ethers.getSigners();
         const killLib = await killLibContract(user1);
         return {
             safe: await getSafe({ owners: [user1.address, user2.address], threshold: 1 }),

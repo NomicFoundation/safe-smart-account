@@ -5,7 +5,7 @@ import hre from "hardhat";
 import crypto from "crypto";
 import { AddressZero } from "@ethersproject/constants";
 import { p256 } from "@noble/curves/nist.js";
-import { getSafeTemplate, getSafe, getEip7702Safe } from "../utils/setup.js";
+import { getSafeTemplate, getSafe, getEip7702Safe, createFixture } from "../utils/setup.js";
 import {
     safeSignTypedData,
     executeTx,
@@ -22,11 +22,12 @@ import {
 import { chainId } from "../utils/encoding.js";
 import { revertingSignatureValidatorContract } from "../utils/contracts.js";
 
+const { ethers, networkConfig } = await hre.network.getOrCreate();
+
 describe("Safe", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const compatFallbackHandler = await getCompatFallbackHandler();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const safe = await getSafe({ owners: [user1.address] });
 
@@ -336,7 +337,7 @@ describe("Safe", () => {
                 "0000000000000000000000000000000000000000000000000000000000000020" +
                 "00" + // r, s, v
                 "0000000000000000000000000000000000000000000000000000000000000000"; // Some data to read
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
                 "GS021",
             );
         });
@@ -357,7 +358,7 @@ describe("Safe", () => {
                 "0000000000000000000000000000000000000000000000000000000000000041" +
                 "00"; // r, s, v
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
                 "GS022",
             );
         });
@@ -379,7 +380,7 @@ describe("Safe", () => {
                 "00" + // r, s, v
                 "0000000000000000000000000000000000000000000000000000000000000020"; // length
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
                 "GS023",
             );
         });
@@ -393,7 +394,7 @@ describe("Safe", () => {
             const tx = buildSafeTransaction({ to: safeAddress, nonce: await safe.nonce() });
             const txHash = calculateSafeTransactionHash(safeAddress, tx, await chainId());
             const signatures = buildSignatureBytes([await safeSignTypedData(user1, safeAddress, tx, 1)]);
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
                 "GS026",
             );
         });
@@ -408,9 +409,9 @@ describe("Safe", () => {
             const tx = buildSafeTransaction({ to: safeAddress, nonce: await safe.nonce() });
             const txHash = calculateSafeTransactionHash(safeAddress, tx, await chainId());
             const signatures = buildSignatureBytes([await safeApproveHash(user1, safe, tx, true)]);
-            await expect(
-                user2Safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures),
-            ).to.be.revertedWith("GS025");
+            await expect(user2Safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+                "GS025",
+            );
         });
 
         it("should revert if threshold is not set", async () => {
@@ -419,7 +420,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
             const tx = buildSafeTransaction({ to: safeAddress, nonce: await safe.nonce() });
             const txHash = calculateSafeTransactionHash(safeAddress, tx, await chainId());
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, "0x")).to.be.revertedWith("GS001");
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, "0x")).to.be.revertedWith("GS001");
         });
 
         it("should revert if not the required amount of signature data is provided", async () => {
@@ -430,7 +431,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
             const tx = buildSafeTransaction({ to: safeAddress, nonce: await safe.nonce() });
             const txHash = calculateSafeTransactionHash(safeAddress, tx, await chainId());
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, "0x")).to.be.revertedWith("GS020");
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, "0x")).to.be.revertedWith("GS020");
         });
 
         it("should not be able to use different signature type of same owner", async () => {
@@ -446,7 +447,7 @@ describe("Safe", () => {
                 await safeSignTypedData(user1, safeAddress, tx),
                 await safeSignTypedData(user3, safeAddress, tx),
             ]);
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, txHash, signatures)).to.be.revertedWith(
                 "GS026",
             );
         });
@@ -506,7 +507,7 @@ describe("Safe", () => {
 
             const selfSignature = {
                 signer: safeAddress,
-                data: buildSignatureBytes([await safeApproveHash(await hre.ethers.getSigner(safeAddress), safe, tx, true)]),
+                data: buildSignatureBytes([await safeApproveHash(await ethers.getSigner(safeAddress), safe, tx, true)]),
                 dynamic: true,
             } as const;
             const signatures = buildSignatureBytes([selfSignature]);
@@ -535,7 +536,7 @@ describe("Safe", () => {
         });
 
         function isSecp256r1Enabled() {
-            return (hre.network.config as { enableRip7212?: boolean }).enableRip7212 === true;
+            return (networkConfig as { enableRip7212?: boolean }).enableRip7212 === true;
         }
 
         it("should revert when RIP-7212/RIP-7951 is not enabled", async function () {
@@ -546,20 +547,17 @@ describe("Safe", () => {
             await setupTests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
-            const address = hre.ethers.getAddress(
-                hre.ethers.dataSlice(
-                    hre.ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]),
-                    12,
-                ),
+            const address = ethers.getAddress(
+                ethers.dataSlice(ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]), 12),
             );
             const safe = await getSafe({
                 owners: [address],
                 threshold: 1,
             });
 
-            const dataHash = hre.ethers.id("Fusaka!");
-            const signature = p256.sign(hre.ethers.getBytes(dataHash), secretKey, { prehash: false });
-            const signatures = hre.ethers.solidityPacked(
+            const dataHash = ethers.id("Fusaka!");
+            const signature = p256.sign(ethers.getBytes(dataHash), secretKey, { prehash: false });
+            const signatures = ethers.solidityPacked(
                 ["uint256", "uint256", "uint8", "bytes32", "bytes32", "uint256", "uint256"],
                 [
                     address, // the owner public address
@@ -572,7 +570,7 @@ describe("Safe", () => {
                 ],
             );
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
                 "GS028",
             );
         });
@@ -585,20 +583,17 @@ describe("Safe", () => {
             await setupTests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
-            const address = hre.ethers.getAddress(
-                hre.ethers.dataSlice(
-                    hre.ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]),
-                    12,
-                ),
+            const address = ethers.getAddress(
+                ethers.dataSlice(ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]), 12),
             );
             const safe = await getSafe({
                 owners: [address],
                 threshold: 1,
             });
 
-            const dataHash = hre.ethers.id("Fusaka!");
-            const signature = p256.sign(hre.ethers.getBytes(dataHash), secretKey, { prehash: false });
-            const signatures = hre.ethers.solidityPacked(
+            const dataHash = ethers.id("Fusaka!");
+            const signature = p256.sign(ethers.getBytes(dataHash), secretKey, { prehash: false });
+            const signatures = ethers.solidityPacked(
                 ["uint256", "uint256", "uint8", "bytes32", "bytes32", "uint256", "uint256"],
                 [
                     address, // the owner public address
@@ -611,7 +606,7 @@ describe("Safe", () => {
                 ],
             );
 
-            await safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, signatures);
+            await safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, signatures);
         });
 
         it("should revert on incorrectly encoded RIP-7212/RIP-7951 signatures [@secp256r1]", async function () {
@@ -620,22 +615,22 @@ describe("Safe", () => {
                 owners: [`0x${"42".repeat(20)}`],
                 threshold: 1,
             });
-            const dataHash = hre.ethers.id("Fusaka!");
+            const dataHash = ethers.id("Fusaka!");
 
-            const offsetInStaticPart = hre.ethers.solidityPacked(
+            const offsetInStaticPart = ethers.solidityPacked(
                 ["bytes32", "uint256", "uint8", "bytes32", "uint256", "uint256"],
-                [hre.ethers.ZeroHash, 12, 2, hre.ethers.ZeroHash, 0, 0],
+                [ethers.ZeroHash, 12, 2, ethers.ZeroHash, 0, 0],
             );
             await expect(
-                safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, offsetInStaticPart),
+                safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, offsetInStaticPart),
             ).to.be.revertedWith("GS021");
 
-            const missingSignatureData = hre.ethers.solidityPacked(
+            const missingSignatureData = ethers.solidityPacked(
                 ["bytes32", "uint256", "uint8", "bytes32"],
-                [hre.ethers.ZeroHash, 65, 2, hre.ethers.ZeroHash],
+                [ethers.ZeroHash, 65, 2, ethers.ZeroHash],
             );
             await expect(
-                safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, missingSignatureData),
+                safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, missingSignatureData),
             ).to.be.revertedWith("GS027");
         });
 
@@ -643,9 +638,9 @@ describe("Safe", () => {
             await setupTests();
             const owner = p256.keygen();
             const ownerPublicKeyCoords = p256.Point.fromBytes(owner.publicKey);
-            const ownerAddress = hre.ethers.getAddress(
-                hre.ethers.dataSlice(
-                    hre.ethers.solidityPackedKeccak256(["uint256", "uint256"], [ownerPublicKeyCoords.x, ownerPublicKeyCoords.y]),
+            const ownerAddress = ethers.getAddress(
+                ethers.dataSlice(
+                    ethers.solidityPackedKeccak256(["uint256", "uint256"], [ownerPublicKeyCoords.x, ownerPublicKeyCoords.y]),
                     12,
                 ),
             );
@@ -654,11 +649,11 @@ describe("Safe", () => {
                 threshold: 1,
             });
 
-            const dataHash = hre.ethers.id("Fusaka!");
+            const dataHash = ethers.id("Fusaka!");
             const otherSigner = p256.keygen();
             const otherPublicKeyCoords = p256.Point.fromBytes(otherSigner.publicKey);
-            const signature = p256.sign(hre.ethers.getBytes(dataHash), otherSigner.secretKey, { prehash: false });
-            const signatures = hre.ethers.solidityPacked(
+            const signature = p256.sign(ethers.getBytes(dataHash), otherSigner.secretKey, { prehash: false });
+            const signatures = ethers.solidityPacked(
                 ["uint256", "uint256", "uint8", "bytes32", "bytes32", "uint256", "uint256"],
                 [
                     ownerAddress, // the owner public address
@@ -671,7 +666,7 @@ describe("Safe", () => {
                 ],
             );
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
                 "GS028",
             );
         });
@@ -684,33 +679,30 @@ describe("Safe", () => {
             await setupTests();
             const { secretKey, publicKey } = p256.keygen();
             const publicKeyCoords = p256.Point.fromBytes(publicKey);
-            const address = hre.ethers.getAddress(
-                hre.ethers.dataSlice(
-                    hre.ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]),
-                    12,
-                ),
+            const address = ethers.getAddress(
+                ethers.dataSlice(ethers.solidityPackedKeccak256(["uint256", "uint256"], [publicKeyCoords.x, publicKeyCoords.y]), 12),
             );
             const safe = await getSafe({
                 owners: [address],
                 threshold: 1,
             });
 
-            const dataHash = hre.ethers.id("Fusaka!");
-            const signature = p256.sign(hre.ethers.getBytes(dataHash), secretKey, { prehash: false });
-            const signatures = hre.ethers.solidityPacked(
+            const dataHash = ethers.id("Fusaka!");
+            const signature = p256.sign(ethers.getBytes(dataHash), secretKey, { prehash: false });
+            const signatures = ethers.solidityPacked(
                 ["uint256", "uint256", "uint8", "bytes32", "bytes32", "uint256", "uint256"],
                 [
                     address, // the owner public address
                     65, // the offset in the signature bytes to the rest of the data
                     2, // v == 2, indicating a secp256r1 signature
-                    hre.ethers.id("invalid"), // the wrong signature `r` value, making it invalid
+                    ethers.id("invalid"), // the wrong signature `r` value, making it invalid
                     signature.subarray(32, 64), // the signature `s` value
                     publicKeyCoords.x, // the signer's public key `x` coordinate
                     publicKeyCoords.y, // the signer's public key `y` coordinate
                 ],
             );
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](hre.ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](ethers.ZeroAddress, dataHash, signatures)).to.be.revertedWith(
                 "GS028",
             );
         });

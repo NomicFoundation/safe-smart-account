@@ -1,11 +1,12 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
-import { getSafe } from "../utils/setup.js";
+import hre from "hardhat";
+import { getSafe, createFixture } from "../utils/setup.js";
 import { AddressOne } from "../../src/utils/constants.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Safe - Reserved Addresses", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const [user1] = await ethers.getSigners();
         return {
             safe: await getSafe({ owners: [user1.address] }),
@@ -14,7 +15,7 @@ describe("Safe - Reserved Addresses", () => {
 
     it("sentinels should not be owners or modules", async () => {
         const { safe } = await setupTests();
-        const readOnlySafe = safe.connect(hre.ethers.provider);
+        const readOnlySafe = safe.connect(ethers.provider);
 
         expect(await safe.isOwner(AddressOne)).to.be.false;
 

@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getCompatFallbackHandler, getSafe } from "../utils/setup.js";
+import { getCompatFallbackHandler, getSafe, createFixture } from "../utils/setup.js";
 import {
     buildSignatureBytes,
     executeContractCallWithSigners,
@@ -13,13 +13,14 @@ import {
 import { chainId } from "../utils/encoding.js";
 import { badSimulatorContract, killLibContract, revertingSignatureValidatorContract } from "../utils/contracts.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("CompatibilityFallbackHandler", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signLib = await (await hre.ethers.getContractFactory("SignMessageLib")).deploy();
+    const setupTests = createFixture(async () => {
+        const signLib = await (await ethers.getContractFactory("SignMessageLib")).deploy();
         const handler = await getCompatFallbackHandler();
         const handlerAddress = await handler.getAddress();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1, user2] = signers;
         const signerSafe = await getSafe({ owners: [user1.address], threshold: 1, fallbackHandler: handlerAddress });
         const signerSafeAddress = await signerSafe.getAddress();

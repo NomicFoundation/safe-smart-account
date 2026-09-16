@@ -1,9 +1,11 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getSafeSingleton, migrationContractFactory } from "../utils/setup.js";
+import { getSafe, getSafeSingleton, migrationContractFactory, createFixture } from "../utils/setup.js";
 import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import { executeContractCallWithSigners } from "../../src/utils/execution.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("Migration 1.2.0", () => {
     const MigratedInterface = new ethers.Interface([
@@ -11,9 +13,8 @@ describe("Migration 1.2.0", () => {
         "function masterCopy() view returns(address)",
     ]);
 
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const singleton120 = (await (await user1.sendTransaction({ data: deploymentData.safe120 })).wait())?.contractAddress;
         if (!singleton120) {

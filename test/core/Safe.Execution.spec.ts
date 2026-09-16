@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { deployContractFromSource, getSafe } from "../utils/setup.js";
+import { deployContractFromSource, getSafe, createFixture } from "../utils/setup.js";
 import {
     safeApproveHash,
     buildSignatureBytes,
@@ -13,10 +13,11 @@ import {
 
 import { chainId } from "../utils/encoding.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Safe", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const setterSource = `
             contract StorageSetter {
@@ -31,7 +32,7 @@ describe("Safe", () => {
                 }
             }`;
         const storageSetter = await deployContractFromSource(user1, setterSource);
-        const TestNativeTokenReceiver = await hre.ethers.getContractFactory("TestNativeTokenReceiver");
+        const TestNativeTokenReceiver = await ethers.getContractFactory("TestNativeTokenReceiver");
         const nativeTokenReceiver = await TestNativeTokenReceiver.deploy();
 
         const reverterSource = `
@@ -90,11 +91,11 @@ describe("Safe", () => {
                 .withArgs(txHash, 0);
 
             await expect(
-                await hre.ethers.provider.getStorage(safeAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
+                await ethers.provider.getStorage(safeAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
             ).to.be.eq("0x" + "".padEnd(64, "0"));
 
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     storageSetterAddress,
                     "0x4242424242424242424242424242424242424242424242424242424242424242",
                 ),
@@ -139,11 +140,11 @@ describe("Safe", () => {
             );
 
             await expect(
-                await hre.ethers.provider.getStorage(safeAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
+                await ethers.provider.getStorage(safeAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
             ).to.be.eq("0x" + "baddad".padEnd(64, "0"));
 
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     storageSetterAddress,
                     "0x4242424242424242424242424242424242424242424242424242424242424242",
                 ),
@@ -202,14 +203,14 @@ describe("Safe", () => {
                 refundReceiver: user2.address,
             });
 
-            await user1.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("1") });
-            const userBalance = await hre.ethers.provider.getBalance(user2.address);
-            expect(await hre.ethers.provider.getBalance(safeAddress)).to.be.eq(hre.ethers.parseEther("1"));
+            await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
+            const userBalance = await ethers.provider.getBalance(user2.address);
+            expect(await ethers.provider.getBalance(safeAddress)).to.be.eq(ethers.parseEther("1"));
 
             const executedTx = await executeTx(safe.connect(user1), tx, [await safeApproveHash(user1, safe, tx, true)]);
             await expect(executedTx).to.emit(safe, "ExecutionSuccess");
 
-            const receipt = await hre.ethers.provider.getTransactionReceipt(executedTx!.hash);
+            const receipt = await ethers.provider.getTransactionReceipt(executedTx!.hash);
             const receiptLogs = receipt?.logs ?? [];
             const logIndex = receiptLogs.length - 1;
             const successEvent = safe.interface.decodeEventLog(
@@ -220,7 +221,7 @@ describe("Safe", () => {
             expect(successEvent.txHash).to.be.eq(calculateSafeTransactionHash(safeAddress, tx, await chainId()));
             // Gas costs are around 3000, so even if we specified a safeTxGas from 100000 we should not use more
             expect(successEvent.payment).to.be.lte(5000n);
-            expect(await hre.ethers.provider.getBalance(user2.address)).to.eq(userBalance + successEvent.payment);
+            expect(await ethers.provider.getBalance(user2.address)).to.eq(userBalance + successEvent.payment);
         });
 
         it("should emit payment in failure event", async () => {
@@ -239,13 +240,13 @@ describe("Safe", () => {
                 refundReceiver: user2.address,
             });
 
-            await user1.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("1") });
-            const userBalance = await hre.ethers.provider.getBalance(user2.address);
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(hre.ethers.parseEther("1"));
+            await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
+            const userBalance = await ethers.provider.getBalance(user2.address);
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
 
             const executedTx = await executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)]);
             await expect(executedTx).to.emit(safe, "ExecutionFailure");
-            const receipt = await hre.ethers.provider.getTransactionReceipt(executedTx!.hash);
+            const receipt = await ethers.provider.getTransactionReceipt(executedTx!.hash);
             const receiptLogs = receipt?.logs ?? [];
             const logIndex = receiptLogs.length - 1;
             const successEvent = safe.interface.decodeEventLog(
@@ -256,7 +257,7 @@ describe("Safe", () => {
             expect(successEvent.txHash).to.be.eq(calculateSafeTransactionHash(safeAddress, tx, await chainId()));
             // FIXME: When running out of gas the gas used is slightly higher than the safeTxGas and the user has to overpay
             expect(successEvent.payment).to.be.lte(10000n);
-            await expect(await hre.ethers.provider.getBalance(user2.address)).to.eq(userBalance + successEvent.payment);
+            await expect(await ethers.provider.getBalance(user2.address)).to.eq(userBalance + successEvent.payment);
         });
 
         it("should be possible to manually increase gas", async () => {
@@ -302,7 +303,7 @@ describe("Safe", () => {
 
             // This should only work if the gasPrice is 0
             tx.gasPrice = 1;
-            await user1.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("1") });
+            await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
             await expect(
                 executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)], { gasLimit: 6000000 }),
                 "Safe transaction should fail with gasPrice 1 and high gasLimit",
@@ -324,8 +325,8 @@ describe("Safe", () => {
                 refundReceiver: nativeTokenReceiverAddress,
             });
 
-            await user1.sendTransaction({ to: safeAddress, value: hre.ethers.parseEther("1") });
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.eq(hre.ethers.parseEther("1"));
+            await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
+            await expect(await ethers.provider.getBalance(safeAddress)).to.eq(ethers.parseEther("1"));
 
             // await expect(await executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)], { gasLimit: 5500000 })).to.emit(
             //     nativeTokenReceiver,
@@ -333,7 +334,7 @@ describe("Safe", () => {
             // );
 
             const executedTx = await executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)], { gasLimit: 5500000 });
-            const receipt = await hre.ethers.provider.getTransactionReceipt(executedTx.hash);
+            const receipt = await ethers.provider.getTransactionReceipt(executedTx.hash);
             console.log("gas used:", receipt?.gasUsed.toString());
             const receiptLogs = receipt?.logs ?? [];
             const parsedLogs = [];

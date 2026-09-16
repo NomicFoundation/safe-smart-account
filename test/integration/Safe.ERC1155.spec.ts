@@ -1,14 +1,15 @@
 import { expect } from "chai";
 import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { defaultTokenCallbackHandlerDeployment, getSafeTemplate } from "../utils/setup.js";
+import { defaultTokenCallbackHandlerDeployment, getSafeTemplate, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("Safe", () => {
-    const setupWithTemplate = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupWithTemplate = createFixture(async () => {
+        const signers = await ethers.getSigners();
 
-        const mockErc1155 = await (await hre.ethers.getContractFactory("ERC1155Token")).deploy();
+        const mockErc1155 = await (await ethers.getContractFactory("ERC1155Token")).deploy();
 
         return {
             safe: await getSafeTemplate(),

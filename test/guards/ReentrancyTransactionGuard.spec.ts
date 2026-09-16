@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { getMock, getSafe } from "../utils/setup.js";
+import { getMock, getSafe, createFixture } from "../utils/setup.js";
 import {
     buildSafeTransaction,
     buildSignatureBytes,
@@ -10,13 +10,14 @@ import {
     safeSignTypedData,
 } from "../../src/utils/execution.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("ReentrancyTransactionGuard", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const safe = await getSafe({ owners: [user1.address] });
-        const guardFactory = await hre.ethers.getContractFactory("ReentrancyTransactionGuard");
+        const guardFactory = await ethers.getContractFactory("ReentrancyTransactionGuard");
         const guard = await guardFactory.deploy();
         const guardAddress = await guard.getAddress();
         const mock = await getMock();

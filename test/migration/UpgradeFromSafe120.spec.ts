@@ -1,21 +1,22 @@
 import { expect } from "chai";
-import hre, { ethers, deployments } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafeSingleton, getFactory, getMock, getMultiSend } from "../utils/setup.js";
+import { getSafeSingleton, getFactory, getMock, getMultiSend, createFixture } from "../utils/setup.js";
 import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution.js";
 import { verificationTests } from "./subTests.spec.js";
 import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Upgrade from Safe 1.2.0", () => {
     const ChangeMasterCopyInterface = new ethers.Interface(["function changeMasterCopy(address target)"]);
 
     // We migrate the Safe and run the verification tests
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const mock = await getMock();
         const mockAddress = await mock.getAddress();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const singleton120 = (await (await user1.sendTransaction({ data: deploymentData.safe120 })).wait())?.contractAddress;
         if (!singleton120) throw new Error("Could not deploy Safe 1.2.0");
@@ -26,7 +27,7 @@ describe("Upgrade from Safe 1.2.0", () => {
         const proxyAddress = await calculateProxyAddress(factory, singleton120, "0x", saltNonce);
         await factory.createProxyWithNonce(singleton120, "0x", saltNonce).then((tx) => tx.wait());
 
-        const safe = await hre.ethers.getContractAt("Safe", proxyAddress);
+        const safe = await ethers.getContractAt("Safe", proxyAddress);
         await safe.setup([user1.address], 1, AddressZero, "0x", mockAddress, AddressZero, 0, AddressZero);
 
         expect(await safe.VERSION()).to.be.eq("1.2.0");

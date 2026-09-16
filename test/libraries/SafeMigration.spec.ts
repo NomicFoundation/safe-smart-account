@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import hre, { ethers, deployments } from "hardhat";
+import hre from "hardhat";
 import {
     getSafe,
     getSafeSingletonAt,
@@ -8,12 +8,15 @@ import {
     getCompatFallbackHandler,
     getSafeL1Singleton,
     getAbi,
+    createFixture,
 } from "../utils/setup.js";
 import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import fallbackHandlerDeploymentData from "../json/fallbackHandlerDeployment.json" with { type: "json" };
 
 import { executeContractCallWithSigners } from "../../src/utils/execution.js";
 import { type SafeMigration } from "../../typechain-types/index.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 const FALLBACK_HANDLER_STORAGE_SLOT = "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5";
 
@@ -56,9 +59,7 @@ describe("SafeMigration Library", () => {
     const migratedInterface = new ethers.Interface(["function masterCopy() view returns(address)"]);
 
     describe("constructor", () => {
-        const setupTests = deployments.createFixture(async () => {
-            await deployments.fixture();
-
+        const setupTests = createFixture(async () => {
             return {
                 singletonAddress: await (await getSafeL1Singleton()).getAddress(),
                 singletonL2Address: await (await getSafeL2Singleton()).getAddress(),
@@ -69,21 +70,21 @@ describe("SafeMigration Library", () => {
         it("reverts when Safe singleton is not a contract", async () => {
             const { singletonL2Address, compatibilityFallbackHandlerAddress } = await setupTests();
             await expect(
-                hre.ethers.deployContract("SafeMigration", [ethers.ZeroAddress, singletonL2Address, compatibilityFallbackHandlerAddress]),
+                ethers.deployContract("SafeMigration", [ethers.ZeroAddress, singletonL2Address, compatibilityFallbackHandlerAddress]),
             ).to.be.revertedWith("Safe Singleton is not deployed");
         });
 
         it("reverts when SafeL2 singleton is not a contract", async () => {
             const { singletonAddress, compatibilityFallbackHandlerAddress } = await setupTests();
             await expect(
-                hre.ethers.deployContract("SafeMigration", [singletonAddress, ethers.ZeroAddress, compatibilityFallbackHandlerAddress]),
+                ethers.deployContract("SafeMigration", [singletonAddress, ethers.ZeroAddress, compatibilityFallbackHandlerAddress]),
             ).to.be.revertedWith("Safe Singleton (L2) is not deployed");
         });
 
         it("reverts when fallback handler is not a contract", async () => {
             const { singletonAddress, singletonL2Address } = await setupTests();
             await expect(
-                hre.ethers.deployContract("SafeMigration", [singletonAddress, singletonL2Address, ethers.ZeroAddress]),
+                ethers.deployContract("SafeMigration", [singletonAddress, singletonL2Address, ethers.ZeroAddress]),
             ).to.be.revertedWith("fallback handler is not deployed");
         });
     });
@@ -94,8 +95,7 @@ describe("SafeMigration Library", () => {
         let COMPATIBILITY_FALLBACK_HANDLER_ADDRESS: string | undefined;
 
         describe(testSuiteName, () => {
-            const setupTests = deployments.createFixture(async ({ deployments }) => {
-                await deployments.fixture();
+            const setupTests = createFixture(async () => {
                 const signers = await ethers.getSigners();
                 const [user1] = signers;
                 let migration: SafeMigration;
@@ -110,20 +110,20 @@ describe("SafeMigration Library", () => {
                     const safeL2DeploymentData = to.safeL2DeploymentData;
                     const safeCompatFallbackHandler = to.safeCompatFallbackHandler;
 
-                    const safeContractFactory = new hre.ethers.ContractFactory(await getAbi("Safe"), safeDeploymentData, user1);
+                    const safeContractFactory = new ethers.ContractFactory(await getAbi("Safe"), safeDeploymentData, user1);
                     SAFE_SINGLETON_ADDRESS = await (await safeContractFactory.deploy()).getAddress();
 
-                    const safeL2ContractFactory = new hre.ethers.ContractFactory(await getAbi("Safe"), safeL2DeploymentData, user1);
+                    const safeL2ContractFactory = new ethers.ContractFactory(await getAbi("Safe"), safeL2DeploymentData, user1);
                     SAFE_SINGLETON_L2_ADDRESS = await (await safeL2ContractFactory.deploy()).getAddress();
 
-                    const fallbackHandlerContractFactory = new hre.ethers.ContractFactory(
+                    const fallbackHandlerContractFactory = new ethers.ContractFactory(
                         await getAbi("CompatibilityFallbackHandler"),
                         safeCompatFallbackHandler,
                         user1,
                     );
                     COMPATIBILITY_FALLBACK_HANDLER_ADDRESS = await (await fallbackHandlerContractFactory.deploy()).getAddress();
 
-                    migration = (await hre.ethers.deployContract("SafeMigration", [
+                    migration = (await ethers.deployContract("SafeMigration", [
                         SAFE_SINGLETON_ADDRESS,
                         SAFE_SINGLETON_L2_ADDRESS,
                         COMPATIBILITY_FALLBACK_HANDLER_ADDRESS,
@@ -134,9 +134,9 @@ describe("SafeMigration Library", () => {
 
                 const safeDeploymentData = from.safeDeploymentData;
                 const safeL2DeploymentData = from.safeL2DeploymentData;
-                const safeContractFactory = new hre.ethers.ContractFactory(await getAbi("Safe"), safeDeploymentData, user1);
+                const safeContractFactory = new ethers.ContractFactory(await getAbi("Safe"), safeDeploymentData, user1);
                 const singletonAddress = await (await safeContractFactory.deploy()).getAddress();
-                const safeL2ContractFactory = new hre.ethers.ContractFactory(await getAbi("SafeL2"), safeL2DeploymentData, user1);
+                const safeL2ContractFactory = new ethers.ContractFactory(await getAbi("SafeL2"), safeL2DeploymentData, user1);
                 const singletonL2Address = await (await safeL2ContractFactory.deploy()).getAddress();
                 if (!singletonAddress || !singletonL2Address) {
                     throw new Error("Could not deploy safe or safeL2");
@@ -191,19 +191,19 @@ describe("SafeMigration Library", () => {
                     } = await setupTests();
                     const safeAddress = await safe.getAddress();
 
-                    const ownerCountBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 3);
-                    const thresholdBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 4);
-                    const nonceBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 5);
-                    const guardBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
-                    const fallbackHandlerBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT);
+                    const ownerCountBeforeMigration = await ethers.provider.getStorage(safeAddress, 3);
+                    const thresholdBeforeMigration = await ethers.provider.getStorage(safeAddress, 4);
+                    const nonceBeforeMigration = await ethers.provider.getStorage(safeAddress, 5);
+                    const guardBeforeMigration = await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
+                    const fallbackHandlerBeforeMigration = await ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT);
 
                     expect(await executeContractCallWithSigners(safe, migration, "migrateSingleton", [], [user1], true));
 
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT)).to.be.eq(
+                    expect(await ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
+                    expect(await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT)).to.be.eq(
                         fallbackHandlerBeforeMigration,
                     );
                 });
@@ -253,17 +253,17 @@ describe("SafeMigration Library", () => {
                     } = await setupTests();
                     const safeAddress = await safe.getAddress();
 
-                    const ownerCountBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 3);
-                    const thresholdBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 4);
-                    const nonceBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 5);
-                    const guardBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
+                    const ownerCountBeforeMigration = await ethers.provider.getStorage(safeAddress, 3);
+                    const thresholdBeforeMigration = await ethers.provider.getStorage(safeAddress, 4);
+                    const nonceBeforeMigration = await ethers.provider.getStorage(safeAddress, 5);
+                    const guardBeforeMigration = await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
 
                     expect(await executeContractCallWithSigners(safe, migration, "migrateWithFallbackHandler", [], [user1], true));
 
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
+                    expect(await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
                 });
             });
 
@@ -305,19 +305,19 @@ describe("SafeMigration Library", () => {
                     } = await setupTests();
                     const safeAddress = await safeL2.getAddress();
 
-                    const ownerCountBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 3);
-                    const thresholdBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 4);
-                    const nonceBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 5);
-                    const guardBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
-                    const fallbackHandlerBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT);
+                    const ownerCountBeforeMigration = await ethers.provider.getStorage(safeAddress, 3);
+                    const thresholdBeforeMigration = await ethers.provider.getStorage(safeAddress, 4);
+                    const nonceBeforeMigration = await ethers.provider.getStorage(safeAddress, 5);
+                    const guardBeforeMigration = await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
+                    const fallbackHandlerBeforeMigration = await ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT);
 
                     expect(await executeContractCallWithSigners(safeL2, migration, "migrateL2Singleton", [], [user1], true));
 
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT)).to.be.eq(
+                    expect(await ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
+                    expect(await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, FALLBACK_HANDLER_STORAGE_SLOT)).to.be.eq(
                         fallbackHandlerBeforeMigration,
                     );
                 });
@@ -367,17 +367,17 @@ describe("SafeMigration Library", () => {
                     } = await setupTests();
                     const safeAddress = await safeL2.getAddress();
 
-                    const ownerCountBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 3);
-                    const thresholdBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 4);
-                    const nonceBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, 5);
-                    const guardBeforeMigration = await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
+                    const ownerCountBeforeMigration = await ethers.provider.getStorage(safeAddress, 3);
+                    const thresholdBeforeMigration = await ethers.provider.getStorage(safeAddress, 4);
+                    const nonceBeforeMigration = await ethers.provider.getStorage(safeAddress, 5);
+                    const guardBeforeMigration = await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT);
 
                     expect(await executeContractCallWithSigners(safeL2, migration, "migrateL2WithFallbackHandler", [], [user1], true));
 
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
-                    expect(await hre.ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 3)).to.be.eq(ownerCountBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 4)).to.be.eq(thresholdBeforeMigration);
+                    expect(await ethers.provider.getStorage(safeAddress, 5)).to.be.eq(BigInt(nonceBeforeMigration) + 1n);
+                    expect(await ethers.provider.getStorage(safeAddress, GUARD_STORAGE_SLOT)).to.be.eq(guardBeforeMigration);
                 });
             });
         });

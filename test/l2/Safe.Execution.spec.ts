@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
-import { getMock, getSafe } from "../utils/setup.js";
+import hre from "hardhat";
+import { getMock, getSafe, createFixture } from "../utils/setup.js";
 import {
     safeApproveHash,
     buildSafeTransaction,
@@ -10,6 +10,8 @@ import {
 } from "../../src/utils/execution.js";
 import { safeContractUnderTest } from "../utils/config.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("SafeL2", () => {
     before(function () {
         if (safeContractUnderTest() != "SafeL2") {
@@ -17,10 +19,9 @@ describe("SafeL2", () => {
         }
     });
 
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
+    const setupTests = createFixture(async () => {
         const signers = await ethers.getSigners();
         const [user1] = signers;
-        await deployments.fixture();
         const mock = await getMock();
         return {
             safe: await getSafe({ owners: [user1.address] }),
@@ -49,7 +50,7 @@ describe("SafeL2", () => {
             });
 
             await user1.sendTransaction({ to: safeAddress, value: ethers.parseEther("1") });
-            await expect(await hre.ethers.provider.getBalance(safeAddress)).to.be.deep.eq(ethers.parseEther("1"));
+            await expect(await ethers.provider.getBalance(safeAddress)).to.be.deep.eq(ethers.parseEther("1"));
 
             const additionalInfo = ethers.AbiCoder.defaultAbiCoder().encode(
                 ["uint256", "address", "uint256"],

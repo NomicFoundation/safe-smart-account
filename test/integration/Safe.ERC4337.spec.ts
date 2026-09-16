@@ -4,6 +4,8 @@ import { AddressZero } from "@ethersproject/constants";
 import { getFactory, getSafeSingletonAt } from "../utils/setup.js";
 import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 const nonEmptyString = (value?: string) => typeof value !== "undefined" && value !== "";
 
 const ERC4337_TEST_ENV_VARIABLES_DEFINED =
@@ -40,9 +42,9 @@ describe("Safe.ERC4337", () => {
     const setupTests = async () => {
         const factory = await getFactory(SAFE_FACTORY_ADDRESS as string);
         const singleton = await getSafeSingletonAt(SINGLETON_ADDRESS as string);
-        const bundlerProvider = new hre.ethers.JsonRpcProvider(BUNDLER_URL);
-        const provider = new hre.ethers.JsonRpcProvider(NODE_URL);
-        const userWallet = hre.ethers.HDNodeWallet.fromMnemonic(hre.ethers.Mnemonic.fromPhrase(MNEMONIC as string)).connect(provider);
+        const bundlerProvider = new ethers.JsonRpcProvider(BUNDLER_URL);
+        const provider = new ethers.JsonRpcProvider(NODE_URL);
+        const userWallet = ethers.HDNodeWallet.fromMnemonic(ethers.Mnemonic.fromPhrase(MNEMONIC as string)).connect(provider);
 
         const entryPoints = await bundlerProvider.send("eth_supportedEntryPoints", []);
         if (entryPoints.length === 0) {
@@ -71,7 +73,7 @@ describe("Safe.ERC4337", () => {
         const factoryAddress = await factory.getAddress();
         const ENTRYPOINT_ADDRESS = entryPoints[0];
 
-        const erc4337ModuleAndHandlerFactory = (await hre.ethers.getContractFactory("Test4337ModuleAndHandler")).connect(userWallet);
+        const erc4337ModuleAndHandlerFactory = (await ethers.getContractFactory("Test4337ModuleAndHandler")).connect(userWallet);
         const erc4337ModuleAndHandler = await erc4337ModuleAndHandlerFactory.deploy(ENTRYPOINT_ADDRESS);
         const erc4337ModuleAndHandlerAddress = await erc4337ModuleAndHandler.getAddress();
         // The bundler uses a different node, so we need to allow it sometime to sync
@@ -99,14 +101,14 @@ describe("Safe.ERC4337", () => {
         const deployedAddress = await calculateProxyAddress(factory, SINGLETON_ADDRESS as string, encodedInitializer, 73);
 
         // The initCode contains 20 bytes of the factory address and the rest is the calldata to be forwarded
-        const initCode = hre.ethers.concat([
+        const initCode = ethers.concat([
             factoryAddress,
             factory.interface.encodeFunctionData("createProxyWithNonce", [SINGLETON_ADDRESS as string, encodedInitializer, 73]),
         ]);
         const userOpCallData = erc4337ModuleAndHandler.interface.encodeFunctionData("execTransaction", [userWallet.address, 0, "0x"]);
 
         // Native tokens for the pre-fund 💸
-        await userWallet.sendTransaction({ to: deployedAddress, value: hre.ethers.parseEther("0.005") });
+        await userWallet.sendTransaction({ to: deployedAddress, value: ethers.parseEther("0.005") });
         // The bundler uses a different node, so we need to allow it sometime to sync
         await sleep(10000);
 

@@ -1,20 +1,21 @@
 import { expect } from "chai";
-import hre, { ethers, deployments } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafeSingleton, getFactory, getMock, getMultiSend } from "../utils/setup.js";
+import { getSafeSingleton, getFactory, getMock, getMultiSend, createFixture } from "../utils/setup.js";
 import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution.js";
 import { verificationTests } from "./subTests.spec.js";
 import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Upgrade from Safe 1.1.1", () => {
     const ChangeMasterCopyInterface = new ethers.Interface(["function changeMasterCopy(address target)"]);
 
     // We migrate the Safe and run the verification tests
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
-        await deployments.fixture();
         const mock = await getMock();
         const mockAddress = await mock.getAddress();
         const singleton111 = (await (await user1.sendTransaction({ data: deploymentData.safe111 })).wait())?.contractAddress;
@@ -25,7 +26,7 @@ describe("Upgrade from Safe 1.1.1", () => {
         const proxyAddress = await calculateProxyAddress(factory, singleton111, "0x", saltNonce);
         await factory.createProxyWithNonce(singleton111, "0x", saltNonce).then((tx) => tx.wait());
 
-        const safe = await hre.ethers.getContractAt("Safe", proxyAddress);
+        const safe = await ethers.getContractAt("Safe", proxyAddress);
         await safe.setup([user1.address], 1, AddressZero, "0x", mockAddress, AddressZero, 0, AddressZero);
 
         expect(await safe.VERSION()).to.be.eq("1.1.1");

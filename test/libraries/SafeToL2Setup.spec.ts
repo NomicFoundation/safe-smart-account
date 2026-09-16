@@ -1,9 +1,11 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
-import { getFactory, getSafe, getSafeL2Singleton, getSafeSingleton } from "../utils/setup.js";
+import hre from "hardhat";
+import { getFactory, getSafe, getSafeL2Singleton, getSafeSingleton, createFixture, getDeployment } from "../utils/setup.js";
 import { sameHexString } from "../utils/strings.js";
 import { executeContractCallWithSigners } from "../../src/index.js";
 import { EXPECTED_SAFE_STORAGE_LAYOUT, getContractStorageLayout } from "../utils/storage.js";
+
+const { ethers, provider, networkConfig } = await hre.network.getOrCreate();
 
 type HardhatTraceLog = {
     depth: number;
@@ -24,11 +26,10 @@ type HardhatTrace = {
 };
 
 describe("SafeToL2Setup", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const safeToL2SetupAddress = (await deployments.get("SafeToL2Setup")).address;
-        const safeToL2SetupLib = await hre.ethers.getContractAt("SafeToL2Setup", safeToL2SetupAddress);
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const safeToL2SetupAddress = (await getDeployment("SafeToL2Setup")).address;
+        const safeToL2SetupLib = await ethers.getContractAt("SafeToL2Setup", safeToL2SetupAddress);
+        const signers = await ethers.getSigners();
         const safeSingleton = await getSafeSingleton();
         const safeL2 = await getSafeL2Singleton();
         const proxyFactory = await getFactory();
@@ -43,7 +44,7 @@ describe("SafeToL2Setup", () => {
 
     describe("L2", () => {
         before(function () {
-            if (hre.network.config.chainId === 1) {
+            if (networkConfig.chainId === 1) {
                 this.skip();
             }
         });
@@ -162,7 +163,7 @@ describe("SafeToL2Setup", () => {
                 // I decided to use tracing for this test because it gives an overview of all the storage slots involved in the transaction
                 // Alternatively, one could use `eth_getStorageAt` to check storage slots directly
                 // But that would not guarantee that other storage slots were not touched during the transaction
-                const trace = (await hre.network.provider.send("debug_traceTransaction", [transaction.hash])) as HardhatTrace;
+                const trace = (await provider.send("debug_traceTransaction", [transaction.hash])) as HardhatTrace;
                 // Hardhat uses the most basic struct/opcode logger tracer: https://geth.ethereum.org/docs/developers/evm-tracing/built-in-tracers#struct-opcode-logger
                 // To find the "snapshot" of the storage before the DELEGATECALL into the library, we need to find the first DELEGATECALL opcode calling into the library
                 // To do that, we search for the DELEGATECALL opcode with the stack input pointing to the library address
@@ -201,7 +202,7 @@ describe("SafeToL2Setup", () => {
                 }
 
                 // Double-check that the storage slot was changed at the end of the transaction
-                const singletonInStorage = await hre.ethers.provider.getStorage(safeAddress, ethers.zeroPadValue("0x00", 32));
+                const singletonInStorage = await ethers.provider.getStorage(safeAddress, ethers.zeroPadValue("0x00", 32));
                 expect(sameHexString(singletonInStorage, ethers.zeroPadValue(safeL2SingletonAddress, 32))).to.be.true;
             });
         });
@@ -209,7 +210,7 @@ describe("SafeToL2Setup", () => {
 
     describe("L1", () => {
         before(function () {
-            if (hre.network.config.chainId !== 1) {
+            if (networkConfig.chainId !== 1) {
                 this.skip();
             }
         });
@@ -242,7 +243,7 @@ describe("SafeToL2Setup", () => {
                 safeToL2SetupLib.attach(safeAddress),
                 "ChangedMasterCopy",
             );
-            const singletonInStorage = await hre.ethers.provider.getStorage(safeAddress, ethers.zeroPadValue("0x00", 32));
+            const singletonInStorage = await ethers.provider.getStorage(safeAddress, ethers.zeroPadValue("0x00", 32));
             expect(sameHexString(singletonInStorage, ethers.zeroPadValue(safeSingletonAddress, 32))).to.be.true;
         });
     });

@@ -1,17 +1,25 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
 
-import { deployContractFromSource, getEip7702SafeTemplate, getMock, getSafeSingleton, getSafeTemplate } from "../utils/setup.js";
+import {
+    deployContractFromSource,
+    getEip7702SafeTemplate,
+    getMock,
+    getSafeSingleton,
+    getSafeTemplate,
+    createFixture,
+} from "../utils/setup.js";
 import { calculateSafeDomainSeparator } from "../../src/utils/execution.js";
 import { AddressOne } from "../../src/utils/constants.js";
 import { chainId, encodeTransfer } from "../utils/encoding.js";
 import { getSenderAddressFromContractRunner } from "../utils/contracts.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Safe", () => {
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         return {
             template: await getSafeTemplate(),
             mock: await getMock(),
@@ -280,11 +288,11 @@ describe("Safe", () => {
             await expect(await template.getThreshold()).to.eq(2n);
 
             await expect(
-                await hre.ethers.provider.getStorage(templateAddress, "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5"),
+                await ethers.provider.getStorage(templateAddress, "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5"),
             ).to.be.eq("0x" + "1".padStart(64, "0"));
 
             await expect(
-                await hre.ethers.provider.getStorage(templateAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
+                await ethers.provider.getStorage(templateAddress, "0x4242424242424242424242424242424242424242424242424242424242424242"),
             ).to.be.eq("0x" + "42baddad".padEnd(64, "0"));
         });
 
@@ -349,8 +357,8 @@ describe("Safe", () => {
             const deployerAddress = await getSenderAddressFromContractRunner(template);
             const payment = ethers.parseEther("10");
             await user1.sendTransaction({ to: templateAddress, value: payment });
-            const userBalance = await hre.ethers.provider.getBalance(deployerAddress);
-            await expect(await hre.ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("10"));
+            const userBalance = await ethers.provider.getBalance(deployerAddress);
+            await expect(await ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("10"));
 
             await (
                 await template.setup(
@@ -365,8 +373,8 @@ describe("Safe", () => {
                 )
             ).wait();
 
-            await expect(await hre.ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("0"));
-            await expect(userBalance < (await hre.ethers.provider.getBalance(deployerAddress))).to.be.true;
+            await expect(await ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("0"));
+            await expect(userBalance < (await ethers.provider.getBalance(deployerAddress))).to.be.true;
         });
 
         it("should work with ether payment to account", async () => {
@@ -377,8 +385,8 @@ describe("Safe", () => {
             const templateAddress = await template.getAddress();
             const payment = ethers.parseEther("10");
             await user1.sendTransaction({ to: templateAddress, value: payment });
-            const userBalance = await hre.ethers.provider.getBalance(user2.address);
-            await expect(await hre.ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("10"));
+            const userBalance = await ethers.provider.getBalance(user2.address);
+            await expect(await ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("10"));
 
             await template
                 .setup(
@@ -393,8 +401,8 @@ describe("Safe", () => {
                 )
                 .then((tx) => tx.wait(1));
 
-            await expect(await hre.ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("0"));
-            await expect(await hre.ethers.provider.getBalance(user2.address)).to.eq(userBalance + payment);
+            await expect(await ethers.provider.getBalance(templateAddress)).to.eq(ethers.parseEther("0"));
+            await expect(await ethers.provider.getBalance(user2.address)).to.eq(userBalance + payment);
 
             await expect(await template.getOwners()).to.be.deep.eq([user1.address, user2.address, user3.address]);
         });

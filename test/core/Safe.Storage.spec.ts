@@ -1,5 +1,5 @@
-import { expect } from "chai";
 import hre from "hardhat";
+import { expect } from "chai";
 import { getContractStorageLayout } from "../utils/storage.js";
 
 describe("Safe", () => {

@@ -1,21 +1,22 @@
 import { expect } from "chai";
-import hre, { deployments } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getAbi, getFactory, getMock, getMultiSend } from "../utils/setup.js";
+import { getAbi, getFactory, getMock, getMultiSend, createFixture, getDeployment } from "../utils/setup.js";
 import { buildSafeTransaction, executeTx, safeApproveHash } from "../../src/utils/execution.js";
 import { verificationTests } from "./subTests.spec.js";
 import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import { calculateProxyAddress } from "../../src/utils/proxies.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("Upgrade from Safe 1.4.1 L2", () => {
     // We migrate the Safe and run the verification tests
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupTests = createFixture(async () => {
         const mock = await getMock();
         const mockAddress = await mock.getAddress();
-        const signers = await hre.ethers.getSigners();
+        const signers = await ethers.getSigners();
         const [user1] = signers;
-        const safeContractFactory = new hre.ethers.ContractFactory(await getAbi("Safe"), deploymentData.safe141l2, user1);
+        const safeContractFactory = new ethers.ContractFactory(await getAbi("Safe"), deploymentData.safe141l2, user1);
         const singleton141L2 = await (await safeContractFactory.deploy()).getAddress();
         if (!singleton141L2) throw new Error("Could not deploy Safe 1.4.1 L2");
 
@@ -24,12 +25,12 @@ describe("Upgrade from Safe 1.4.1 L2", () => {
         const proxyAddress = await calculateProxyAddress(factory, singleton141L2, "0x", saltNonce);
         await factory.createProxyWithNonce(singleton141L2, "0x", saltNonce).then((tx) => tx.wait());
 
-        const safe = await hre.ethers.getContractAt("Safe", proxyAddress);
+        const safe = await ethers.getContractAt("Safe", proxyAddress);
         await safe.setup([user1.address], 1, AddressZero, "0x", mockAddress, AddressZero, 0, AddressZero);
 
         expect(await safe.VERSION()).to.be.eq("1.4.1");
-        const safeMigrationDeployment = await deployments.get("SafeMigration");
-        const safeMigration = await hre.ethers.getContractAt("SafeMigration", safeMigrationDeployment.address);
+        const safeMigrationDeployment = await getDeployment("SafeMigration");
+        const safeMigration = await ethers.getContractAt("SafeMigration", safeMigrationDeployment.address);
         const nonce = await safe.nonce();
         const data = safeMigration.interface.encodeFunctionData("migrateSingleton");
         const tx = buildSafeTransaction({ to: await safeMigration.getAddress(), data, nonce, operation: 1 });

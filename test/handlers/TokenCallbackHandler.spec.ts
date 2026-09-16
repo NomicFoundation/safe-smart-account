@@ -1,12 +1,12 @@
 import { expect } from "chai";
-import { ethers, deployments } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
-import { getSafe, getTokenCallbackHandler } from "../utils/setup.js";
+import { getSafe, getTokenCallbackHandler, createFixture } from "../utils/setup.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("TokenCallbackHandler", () => {
-    const setupTests = deployments.createFixture(async () => {
-        await deployments.fixture();
-
+    const setupTests = createFixture(async () => {
         const handler = await getTokenCallbackHandler();
         const [user] = await ethers.getSigners();
         const safe = await getSafe({ owners: [user.address], threshold: 1, fallbackHandler: await handler.getAddress() });

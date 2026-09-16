@@ -1,10 +1,12 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre from "hardhat";
 import { Contract } from "ethers";
-import { deployContractFromSource, getFactory, getMock, getSafe, getSafeProxyRuntimeCode } from "../utils/setup.js";
+import { deployContractFromSource, getFactory, getMock, getSafe, getSafeProxyRuntimeCode, createFixture } from "../utils/setup.js";
 import { AddressZero } from "@ethersproject/constants";
 import { calculateChainSpecificProxyAddress, calculateProxyAddress } from "../../src/utils/proxies.js";
 import { chainId } from "./../utils/encoding.js";
+
+const { ethers } = await hre.network.getOrCreate();
 
 describe("ProxyFactory", () => {
     const SINGLETON_SOURCE = `
@@ -35,9 +37,8 @@ describe("ProxyFactory", () => {
         }
     }`;
 
-    const setupTests = hre.deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const signers = await hre.ethers.getSigners();
+    const setupTests = createFixture(async () => {
+        const signers = await ethers.getSigners();
         const [user1] = signers;
         const singleton = await deployContractFromSource(user1, SINGLETON_SOURCE);
         return {
@@ -130,7 +131,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(false);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should emit event with initializing", async () => {
@@ -148,7 +149,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(true);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should not be able to deploy same proxy twice", async () => {
@@ -204,7 +205,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(false);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should emit event with initializing", async () => {
@@ -224,7 +225,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(true);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should not be able to deploy same proxy twice", async () => {
@@ -299,7 +300,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(false);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should emit event with initializing", async () => {
@@ -316,13 +317,13 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(true);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should deploy proxy to create2 address with chainid included in salt", async () => {
             const { factory, singleton } = await setupTests();
             const singletonAddress = await singleton.getAddress();
-            const provider = hre.ethers.provider;
+            const provider = ethers.provider;
             const initCode = singleton.interface.encodeFunctionData("init", []);
             const proxyAddress = await calculateChainSpecificProxyAddress(factory, singletonAddress, initCode, saltNonce, await chainId());
             expect(await provider.getCode(proxyAddress)).to.eq("0x");
@@ -380,7 +381,7 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(false);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should emit event with initializing", async () => {
@@ -399,13 +400,13 @@ describe("ProxyFactory", () => {
             expect(await proxy.isInitialized()).to.be.eq(true);
             expect(await proxy.masterCopy()).to.be.eq(singletonAddress);
             expect(await singleton.masterCopy()).to.be.eq(AddressZero);
-            expect(await hre.ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
+            expect(await ethers.provider.getCode(proxyAddress)).to.be.eq(await getSafeProxyRuntimeCode());
         });
 
         it("should deploy proxy to create2 address with chainid included in salt", async () => {
             const { factory, singleton } = await setupTests();
             const singletonAddress = await singleton.getAddress();
-            const provider = hre.ethers.provider;
+            const provider = ethers.provider;
             const initCode = singleton.interface.encodeFunctionData("init", []);
             const proxyAddress = await calculateChainSpecificProxyAddress(factory, singletonAddress, initCode, saltNonce, await chainId());
             expect(await provider.getCode(proxyAddress)).to.eq("0x");

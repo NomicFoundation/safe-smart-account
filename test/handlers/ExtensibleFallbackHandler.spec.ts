@@ -1,17 +1,18 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero, HashZero } from "@ethersproject/constants";
-import { deployContractFromSource, getExtensibleFallbackHandler, getSafe } from "../utils/setup.js";
+import { deployContractFromSource, getExtensibleFallbackHandler, getSafe, createFixture } from "../utils/setup.js";
 import { buildSignatureBytes, executeContractCallWithSigners, EIP712_SAFE_MESSAGE_TYPE } from "../../src/utils/execution.js";
 import { chainId } from "../utils/encoding.js";
 import { encodeHandler, decodeHandler, encodeCustomVerifier, encodeHandlerFunction } from "../utils/extensible.js";
 import { killLibContract } from "../utils/contracts.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("ExtensibleFallbackHandler", () => {
-    const setupTests = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
-        const [user1, user2] = await hre.ethers.getSigners();
-        const signLib = await (await hre.ethers.getContractFactory("SignMessageLib")).deploy();
+    const setupTests = createFixture(async () => {
+        const [user1, user2] = await ethers.getSigners();
+        const signLib = await (await ethers.getContractFactory("SignMessageLib")).deploy();
         const handler = await getExtensibleFallbackHandler();
         const handlerAddress = await handler.getAddress();
         const signerSafe = await getSafe({ owners: [user1.address], threshold: 1, fallbackHandler: handlerAddress });
@@ -28,8 +29,8 @@ describe("ExtensibleFallbackHandler", () => {
             fallbackHandler: handlerAddress,
         });
         const preconfiguredValidator = await getExtensibleFallbackHandler(await otherSafe.getAddress());
-        const testVerifier = await (await hre.ethers.getContractFactory("TestSafeSignatureVerifier")).deploy();
-        const testMarshalLib = await (await hre.ethers.getContractFactory("TestMarshalLib")).deploy();
+        const testVerifier = await (await ethers.getContractFactory("TestSafeSignatureVerifier")).deploy();
+        const testMarshalLib = await (await ethers.getContractFactory("TestMarshalLib")).deploy();
         const killLib = await killLibContract(user1);
 
         const mirrorSource = `
@@ -641,7 +642,7 @@ describe("ExtensibleFallbackHandler", () => {
                         typeHash.slice(2) +
                         "00000000000000000000000000000000000000000000000000000000000000e0" +
                         "0000000000000000000000000000000000000000000000000000000000000140" +
-                        hre.ethers.AbiCoder.defaultAbiCoder().encode(["bytes"], [encodeData]).slice(66) +
+                        ethers.AbiCoder.defaultAbiCoder().encode(["bytes"], [encodeData]).slice(66) +
                         "0000000000000000000000000000000000000000000000000000000000000004" +
                         "deadbeef00000000000000000000000000000000000000000000000000000000",
                 );
@@ -692,7 +693,7 @@ describe("ExtensibleFallbackHandler", () => {
                 const domainSeparator = ethers.keccak256("0xdeadbeef");
                 const typeHash = ethers.keccak256("0xbaddad");
                 // abi encode the message
-                const encodeData = hre.ethers.AbiCoder.defaultAbiCoder().encode(
+                const encodeData = ethers.AbiCoder.defaultAbiCoder().encode(
                     ["bytes32"],
                     [ethers.keccak256("0xbaddadbaddadbaddadbaddadbaddadbaddad")],
                 );

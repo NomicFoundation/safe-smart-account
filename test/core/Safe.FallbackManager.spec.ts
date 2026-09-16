@@ -1,17 +1,19 @@
 import { expect } from "chai";
-import hre, { deployments, ethers } from "hardhat";
+import hre from "hardhat";
 import { AddressZero } from "@ethersproject/constants";
 import {
     defaultTokenCallbackHandlerDeployment,
     deployContractFromSource,
     getSafeTemplate,
     getTokenCallbackHandler,
+    createFixture,
 } from "../utils/setup.js";
 import { executeContractCallWithSigners } from "../../src/utils/execution.js";
 
+const { ethers } = await hre.network.getOrCreate();
+
 describe("FallbackManager", () => {
-    const setupWithTemplate = deployments.createFixture(async ({ deployments }) => {
-        await deployments.fixture();
+    const setupWithTemplate = createFixture(async () => {
         const source = `
         contract Mirror {
             function lookAtMe() public returns (bytes memory) {
@@ -40,7 +42,7 @@ describe("FallbackManager", () => {
 
             // Check fallback handler
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     await safe.getAddress(),
                     "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5",
                 ),
@@ -51,7 +53,7 @@ describe("FallbackManager", () => {
 
             // Check fallback handler
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     await safe.getAddress(),
                     "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5",
                 ),
@@ -68,7 +70,7 @@ describe("FallbackManager", () => {
 
             // Check fallback handler
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     await safe.getAddress(),
                     "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5",
                 ),
@@ -80,7 +82,7 @@ describe("FallbackManager", () => {
 
             // Check fallback handler
             await expect(
-                await hre.ethers.provider.getStorage(
+                await ethers.provider.getStorage(
                     await safe.getAddress(),
                     "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5",
                 ),
