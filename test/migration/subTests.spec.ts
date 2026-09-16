@@ -9,7 +9,7 @@ import {
     type MetaTransaction,
 } from "../../src/utils/execution.js";
 import { buildMultiSendSafeTx } from "../../src/utils/multisend.js";
-import { MockContract, MultiSend, Safe } from "../../typechain-types";
+import { MockContract, type MultiSend, type Safe } from "../../typechain-types/index.js";
 
 interface TestSetup {
     migratedSafe: Safe;

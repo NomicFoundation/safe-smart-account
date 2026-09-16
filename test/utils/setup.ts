@@ -5,7 +5,7 @@ import solc from "solc";
 import { logGas } from "../../src/utils/execution.js";
 import { safeContractUnderTest } from "./config.js";
 import { getRandomIntAsString } from "./numbers.js";
-import { MockContract, Safe, SafeL2 } from "../../typechain-types";
+import { MockContract, type Safe, type SafeL2 } from "../../typechain-types/index.js";
 
 type SafeSingleton = {
     readonly singleton?: Safe | SafeL2;

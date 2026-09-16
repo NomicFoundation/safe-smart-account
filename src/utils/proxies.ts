@@ -1,5 +1,5 @@
 import { ethers, type BigNumberish } from "ethers";
-import { SafeProxyFactory } from "../../typechain-types";
+import { type SafeProxyFactory } from "../../typechain-types/index.js";
 
 export const calculateProxyAddress = async (factory: SafeProxyFactory, singleton: string, initializer: string, nonce: number | string) => {
     const salt = ethers.solidityPackedKeccak256(["bytes32", "uint256"], [ethers.solidityPackedKeccak256(["bytes"], [initializer]), nonce]);

@@ -11,7 +11,7 @@ import {
     executeContractCallWithSigners,
 } from "../../src/utils/execution.js";
 import { AddressZero } from "@ethersproject/constants";
-import { Safe, SafeL2 } from "../../typechain-types";
+import { type Safe, type SafeL2 } from "../../typechain-types/index.js";
 
 type SafeSingleton = Safe | SafeL2;
 

@@ -13,7 +13,7 @@ import deploymentData from "../json/safeDeployment.json" with { type: "json" };
 import fallbackHandlerDeploymentData from "../json/fallbackHandlerDeployment.json" with { type: "json" };
 
 import { executeContractCallWithSigners } from "../../src/utils/execution.js";
-import { SafeMigration } from "../../typechain-types";
+import { type SafeMigration } from "../../typechain-types/index.js";
 
 const FALLBACK_HANDLER_STORAGE_SLOT = "0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5";
 
