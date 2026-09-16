@@ -29,13 +29,13 @@ describe("Safe - Reserved Addresses", () => {
                 from: "0x0000000000000000000000000000000000000001",
             }),
             "Should not be able to execute transaction from sentinel as owner",
-        ).to.be.reverted;
+        ).to.be.revert(ethers);
 
         await expect(
             readOnlySafe.execTransactionFromModule.staticCall(AddressOne, 0, "0x", 0, {
                 from: "0x0000000000000000000000000000000000000001",
             }),
             "Should not be able to execute transaction from sentinel as module",
-        ).to.be.reverted;
+        ).to.be.revert(ethers);
     });
 });

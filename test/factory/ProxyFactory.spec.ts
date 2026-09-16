@@ -114,7 +114,7 @@ describe("ProxyFactory", () => {
         it("should revert with invalid initializer", async () => {
             const { factory, singleton } = await setupTests();
             const singletonAddress = await singleton.getAddress();
-            await expect(factory.createProxyWithNonce(singletonAddress, "0x42baddad", saltNonce)).to.be.revertedWithoutReason();
+            await expect(factory.createProxyWithNonce(singletonAddress, "0x42baddad", saltNonce)).to.be.revertedWithoutReason(ethers);
         });
 
         it("should emit event without initializing", async () => {
@@ -186,7 +186,7 @@ describe("ProxyFactory", () => {
         it("should revert with invalid initializer", async () => {
             const { factory, singleton } = await setupTests();
             const singletonAddress = await singleton.getAddress();
-            await expect(factory.createProxyWithNonceL2(singletonAddress, "0x42baddad", saltNonce)).to.be.revertedWithoutReason();
+            await expect(factory.createProxyWithNonceL2(singletonAddress, "0x42baddad", saltNonce)).to.be.revertedWithoutReason(ethers);
         });
 
         it("should emit event without initializing", async () => {
@@ -282,9 +282,9 @@ describe("ProxyFactory", () => {
             const { factory, singleton } = await setupTests();
             const singletonAddress = await singleton.getAddress();
 
-            await expect(
-                factory.createChainSpecificProxyWithNonce(singletonAddress, "0x42baddad", saltNonce),
-            ).to.be.revertedWithoutReason();
+            await expect(factory.createChainSpecificProxyWithNonce(singletonAddress, "0x42baddad", saltNonce)).to.be.revertedWithoutReason(
+                ethers,
+            );
         });
 
         it("should emit event without initializing", async () => {
@@ -363,7 +363,7 @@ describe("ProxyFactory", () => {
 
             await expect(
                 factory.createChainSpecificProxyWithNonceL2(singletonAddress, "0x42baddad", saltNonce),
-            ).to.be.revertedWithoutReason();
+            ).to.be.revertedWithoutReason(ethers);
         });
 
         it("should emit event without initializing", async () => {

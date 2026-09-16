@@ -263,7 +263,7 @@ describe("ModuleManager", () => {
 
             await validModuleGuardMock.givenCalldataRevertWithMessage(checkModuleTxData, "Computer says Nah");
 
-            await expect(safe.execTransactionFromModule(user2.address, 0, "0xbeef73", 1)).to.be.reverted;
+            await expect(safe.execTransactionFromModule(user2.address, 0, "0xbeef73", 1)).to.be.revert(ethers);
         });
 
         it("reverts if the post hook of the module guard reverts", async () => {
@@ -284,7 +284,7 @@ describe("ModuleManager", () => {
 
             await validModuleGuardMock.givenCalldataRevertWithMessage(checkAfterModuleExecutionTxData, "Computer says Nah");
 
-            await expect(safe.execTransactionFromModule(user2.address, 0, "0xbeef73", 1)).to.be.reverted;
+            await expect(safe.execTransactionFromModule(user2.address, 0, "0xbeef73", 1)).to.be.revert(ethers);
         });
 
         it("preserves the hash returned by checkModuleTransaction and passes it to checkAfterModuleExecution", async () => {
@@ -465,7 +465,7 @@ describe("ModuleManager", () => {
 
             await validModuleGuardMock.givenCalldataRevertWithMessage(checkModuleTxData, "Computer says Nah");
 
-            await expect(safe.execTransactionFromModuleReturnData(user2.address, 0, "0xbeef73", 1)).to.be.reverted;
+            await expect(safe.execTransactionFromModuleReturnData(user2.address, 0, "0xbeef73", 1)).to.be.revert(ethers);
         });
 
         it("reverts if the post hook of the module guard reverts", async () => {
@@ -485,7 +485,7 @@ describe("ModuleManager", () => {
 
             await validModuleGuardMock.givenCalldataRevertWithMessage(checkAfterModuleExecutionTxData, "Computer says Nah");
 
-            await expect(safe.execTransactionFromModuleReturnData(user2.address, 0, "0xbeef73", 1)).to.be.reverted;
+            await expect(safe.execTransactionFromModuleReturnData(user2.address, 0, "0xbeef73", 1)).to.be.revert(ethers);
         });
 
         it("preserves the hash returned by checkModuleTransaction and passes it to checkAfterModuleExecution", async () => {
@@ -531,7 +531,7 @@ describe("ModuleManager", () => {
                 signers: [user1, user2],
             } = await setupTests();
 
-            await expect(safe.getModulesPaginated(AddressZero, 1)).to.be.reverted;
+            await expect(safe.getModulesPaginated(AddressZero, 1)).to.be.revert(ethers);
             await executeContractCallWithSigners(safe, safe, "enableModule", [user1.address], [user1]);
             expect(await safe.getModulesPaginated(user1.address, 1)).to.be.deep.equal([[], AddressOne]);
             await expect(safe.getModulesPaginated(user2.address, 1)).to.be.revertedWith("GS105");
@@ -582,7 +582,7 @@ describe("ModuleManager", () => {
 
             await expect(
                 executeContractCallWithSigners(safe, safe, "setModuleGuard", [user2.address], [user1]),
-            ).to.be.revertedWithoutReason();
+            ).to.be.revertedWithoutReason(ethers);
         });
 
         it("emits an event when the module guard is changed", async () => {

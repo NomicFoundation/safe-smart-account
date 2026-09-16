@@ -45,7 +45,7 @@ describe("GuardManager", () => {
             } = await setupWithTemplate();
             const safe = await getSafe({ owners: [user1.address] });
 
-            await expect(executeContractCallWithSigners(safe, safe, "setGuard", [user2.address], [user1])).to.be.reverted;
+            await expect(executeContractCallWithSigners(safe, safe, "setGuard", [user2.address], [user1])).to.be.revert(ethers);
         });
 
         it("emits an event when the guard is changed", async () => {

@@ -39,10 +39,10 @@ describe("Safe", () => {
             // within `getModulesPaginated` method that the linked list will be always correctly
             // initialized with 0x1 as a starting element and 0x1 as the end
             // But because `setupModules` wasn't called, it is empty.
-            await expect(singleton.getModulesPaginated(AddressOne, 10)).to.be.reverted;
+            await expect(singleton.getModulesPaginated(AddressOne, 10)).to.be.revert(ethers);
 
             // "Should not be able to retrieve owners (currently the contract will run in an endless loop when not initialized)"
-            await expect(singleton.getOwners()).to.be.reverted;
+            await expect(singleton.getOwners()).to.be.revert(ethers);
 
             await expect(
                 singleton.setup(
@@ -190,7 +190,7 @@ describe("Safe", () => {
                     0,
                     AddressZero,
                 ),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
 
         it("should revert if same owner is included twice one after each other", async () => {

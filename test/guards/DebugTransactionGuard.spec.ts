@@ -56,7 +56,7 @@ describe("DebugTransactionGuard", () => {
                     data: "0xbaddad",
                     value: 1,
                 }),
-            ).to.be.reverted;
+            ).to.be.revert(ethers);
         });
     });
 

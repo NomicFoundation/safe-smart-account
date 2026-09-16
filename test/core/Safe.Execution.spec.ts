@@ -187,7 +187,7 @@ describe("Safe", () => {
             const [user1] = signers;
             const safeAddress = await safe.getAddress();
             const tx = buildSafeTransaction({ to: safeAddress, nonce: await safe.nonce(), operation: 2 });
-            await expect(executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)])).to.be.reverted;
+            await expect(executeTx(safe, tx, [await safeApproveHash(user1, safe, tx, true)])).to.be.revert(ethers);
         });
 
         it("should emit payment in success event", async () => {

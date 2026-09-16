@@ -34,12 +34,12 @@ describe("Safe", () => {
             await token.mint(user1.address, 23, 1337, "0x");
             await expect(await token.balanceOf(user1.address, 23)).to.be.deep.eq(1337n);
 
-            await expect(token.mint(safeAddress, 23, 1337, "0x"), "Should not accept minted token if handler not set").to.be.reverted;
+            await expect(token.mint(safeAddress, 23, 1337, "0x"), "Should not accept minted token if handler not set").to.be.revert(ethers);
 
             await expect(
                 token.connect(user1).safeTransferFrom(user1.address, safeAddress, 23, 1337, "0x"),
                 "Should not accept sent token if handler not set",
-            ).to.be.reverted;
+            ).to.be.revert(ethers);
         });
 
         it("should not reject if callback is accepted", async () => {

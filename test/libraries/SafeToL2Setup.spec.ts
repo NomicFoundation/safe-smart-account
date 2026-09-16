@@ -106,7 +106,7 @@ describe("SafeToL2Setup", () => {
                 ]);
 
                 // For some reason, hardhat can't infer the revert reason
-                await expect(proxyFactory.createProxyWithNonce(safeSingleton.target, setupData, 0)).to.be.reverted;
+                await expect(proxyFactory.createProxyWithNonce(safeSingleton.target, setupData, 0)).to.be.revert(ethers);
             });
 
             it("can be used only via DELEGATECALL opcode", async () => {

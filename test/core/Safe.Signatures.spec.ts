@@ -532,7 +532,7 @@ describe("Safe", () => {
 
             const signatures = buildSignatureBytes([await safeSignTypedData(authority, safeAddress, tx)]);
 
-            await expect(safe["checkSignatures(address,bytes32,bytes)"](authority.address, txHash, signatures)).to.not.be.reverted;
+            await expect(safe["checkSignatures(address,bytes32,bytes)"](authority.address, txHash, signatures)).to.not.be.revert(ethers);
         });
 
         function isSecp256r1Enabled() {

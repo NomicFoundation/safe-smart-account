@@ -74,11 +74,12 @@ describe("CompatibilityFallbackHandler", () => {
             } = await setupTests();
             await erc1155.mintBatch(await user.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-            await expect(erc1155.connect(user).safeTransferFrom(await user.getAddress(), await safe.getAddress(), 1, 100, "0x")).to.not.be
-                .reverted;
+            await expect(
+                erc1155.connect(user).safeTransferFrom(await user.getAddress(), await safe.getAddress(), 1, 100, "0x"),
+            ).to.not.be.revert(ethers);
             await expect(
                 erc1155.connect(user).safeBatchTransferFrom(await user.getAddress(), await safe.getAddress(), [2, 3], [100, 100], "0x"),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
 
         it("should revert when tokens are transferred directly to the handler", async () => {
@@ -89,8 +90,9 @@ describe("CompatibilityFallbackHandler", () => {
             } = await setupTests();
             await erc1155.mintBatch(await user.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-            await expect(erc1155.connect(user).safeTransferFrom(await user.getAddress(), await handler.getAddress(), 1, 100, "0x")).to.be
-                .reverted;
+            await expect(
+                erc1155.connect(user).safeTransferFrom(await user.getAddress(), await handler.getAddress(), 1, 100, "0x"),
+            ).to.be.revert(ethers);
             await expect(
                 erc1155.connect(user).safeBatchTransferFrom(await user.getAddress(), await handler.getAddress(), [2, 3], [100, 100], "0x"),
             ).to.be.revertedWith("not a fallback call");
@@ -117,7 +119,7 @@ describe("CompatibilityFallbackHandler", () => {
 
             await expect(
                 erc721.connect(user)["safeTransferFrom(address,address,uint256)"](await user.getAddress(), await safe.getAddress(), 1),
-            ).to.not.be.reverted;
+            ).to.not.be.revert(ethers);
         });
 
         it("should revert when tokens are transferred directly to the handler", async () => {
@@ -145,7 +147,7 @@ describe("CompatibilityFallbackHandler", () => {
         it("should revert if called directly", async () => {
             const { handler } = await setupTests();
             const dataHash = ethers.keccak256("0xbaddad");
-            await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.reverted;
+            await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.revert(ethers);
         });
 
         it("should revert if message was not signed", async () => {
@@ -157,7 +159,7 @@ describe("CompatibilityFallbackHandler", () => {
         it("should revert if signature is not valid", async () => {
             const { validator } = await setupTests();
             const dataHash = ethers.keccak256("0xbaddad");
-            await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.reverted;
+            await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.revert(ethers);
         });
 
         it("should return magic value if message was signed", async () => {
@@ -227,7 +229,7 @@ describe("CompatibilityFallbackHandler", () => {
             };
 
             const signatures = buildSignatureBytes([user1Signature, user2Signature]);
-            await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.reverted;
+            await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.revert(ethers);
         });
 
         it("should revert with GS024 if a contract owner's isValidSignature reverts", async () => {
@@ -311,7 +313,7 @@ describe("CompatibilityFallbackHandler", () => {
         it("should revert if target does not return domain separator", async () => {
             const { handler } = await setupTests();
             const handlerAddress = await handler.getAddress();
-            await expect(handler.getMessageHashForSafe(handlerAddress, "0xdead")).to.be.reverted;
+            await expect(handler.getMessageHashForSafe(handlerAddress, "0xdead")).to.be.revert(ethers);
         });
 
         it("should generate the correct hash", async () => {
@@ -373,7 +375,7 @@ describe("CompatibilityFallbackHandler", () => {
             const { handler, badSimulator } = await setupTests();
             const handlerAddress = await handler.getAddress();
             for (let mode = 0; mode < 4; mode++) {
-                await expect(badSimulator.simulateFallbackHandler(handlerAddress, mode)).to.be.reverted;
+                await expect(badSimulator.simulateFallbackHandler(handlerAddress, mode)).to.be.revert(ethers);
             }
         });
     });

@@ -74,7 +74,7 @@ describe("MultiSend", () => {
             const safeTx = await buildMultiSendSafeTx(multiSend, txs, await safe.nonce());
             await expect(
                 executeTx(safe.connect(user1), safeTx, [await safeApproveHash(user1, safe, safeTx, true)]),
-            ).to.revertedWithoutReason();
+            ).to.revertedWithoutReason(ethers);
         });
 
         it("Can execute empty multisend", async () => {

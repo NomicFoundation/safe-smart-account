@@ -182,21 +182,23 @@ describe("ExtensibleFallbackHandler", () => {
                 const { safe, user1, erc1155 } = await setupTests();
                 await erc1155.mintBatch(await user1.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-                await expect(erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await safe.getAddress(), 1, 100, "0x")).to
-                    .not.be.reverted;
+                await expect(
+                    erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await safe.getAddress(), 1, 100, "0x"),
+                ).to.not.be.revert(ethers);
                 await expect(
                     erc1155
                         .connect(user1)
                         .safeBatchTransferFrom(await user1.getAddress(), await safe.getAddress(), [2, 3], [100, 100], "0x"),
-                ).to.not.be.reverted;
+                ).to.not.be.revert(ethers);
             });
 
             it("should revert when tokens are transferred directly to the handler", async () => {
                 const { handler, user1, erc1155 } = await setupTests();
                 await erc1155.mintBatch(await user1.getAddress(), [1, 2, 3], [100, 100, 100], "0x");
 
-                await expect(erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await handler.getAddress(), 1, 100, "0x")).to
-                    .be.reverted;
+                await expect(
+                    erc1155.connect(user1).safeTransferFrom(await user1.getAddress(), await handler.getAddress(), 1, 100, "0x"),
+                ).to.be.revert(ethers);
                 await expect(
                     erc1155
                         .connect(user1)
@@ -228,7 +230,7 @@ describe("ExtensibleFallbackHandler", () => {
                     erc721
                         .connect(user1)
                         ["safeTransferFrom(address,address,uint256)"](await user1.getAddress(), await safe.getAddress(), 1),
-                ).to.not.be.reverted;
+                ).to.not.be.revert(ethers);
             });
 
             it("should revert when tokens are transferred directly to the handler", async () => {
@@ -331,7 +333,7 @@ describe("ExtensibleFallbackHandler", () => {
                 };
 
                 // Confirm method handler is not set (call should revert)
-                await expect(user1.call(tx)).to.be.reverted;
+                await expect(user1.call(tx)).to.be.revert(ethers);
 
                 // Setup the method handler
                 await executeContractCallWithSigners(
@@ -529,7 +531,7 @@ describe("ExtensibleFallbackHandler", () => {
             it("should revert if called directly", async () => {
                 const { handler } = await setupTests();
                 const dataHash = ethers.keccak256("0xbaddad");
-                await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.reverted;
+                await expect(handler.isValidSignature.staticCall(dataHash, "0x")).to.be.revert(ethers);
             });
 
             it("should revert if message was not signed", async () => {
@@ -541,7 +543,7 @@ describe("ExtensibleFallbackHandler", () => {
             it("should revert if signature is not valid", async () => {
                 const { validator } = await setupTests();
                 const dataHash = ethers.keccak256("0xbaddad");
-                await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.reverted;
+                await expect(validator.isValidSignature.staticCall(dataHash, "0xdeaddeaddeaddead")).to.be.revert(ethers);
             });
 
             it("should revert through default flow if signature is short", async () => {
@@ -601,7 +603,7 @@ describe("ExtensibleFallbackHandler", () => {
                 };
 
                 const signatures = buildSignatureBytes([user1Signature, user2Signature]);
-                await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.reverted;
+                await expect(validator.connect(user1).isValidSignature.staticCall(dataHash, signatures)).to.be.revert(ethers);
             });
 
             it("should send EIP-712 context to custom verifier", async () => {

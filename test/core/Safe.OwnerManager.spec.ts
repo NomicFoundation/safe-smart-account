@@ -64,8 +64,9 @@ describe("OwnerManager", () => {
                 signers: [user1],
             } = await setupTests();
             const safe = await getEip7702Safe(authority, { owners: [user1.address] });
-            await expect(executeContractCallWithSigners(safe, safe, "addOwnerWithThreshold", [await safe.getAddress(), 1], [user1])).to.not
-                .be.reverted;
+            await expect(
+                executeContractCallWithSigners(safe, safe, "addOwnerWithThreshold", [await safe.getAddress(), 1], [user1]),
+            ).to.not.be.revert(ethers);
         });
 
         it("can not add owner twice", async () => {
@@ -173,8 +174,9 @@ describe("OwnerManager", () => {
             const safe = await getEip7702Safe(authority, { owners: [user1.address] });
             await executeContractCallWithSigners(safe, safe, "addOwnerWithThreshold", [await safe.getAddress(), 1], [user1]);
 
-            await expect(executeContractCallWithSigners(safe, safe, "removeOwner", [AddressOne, await safe.getAddress(), 1], [user1])).to
-                .not.be.reverted;
+            await expect(
+                executeContractCallWithSigners(safe, safe, "removeOwner", [AddressOne, await safe.getAddress(), 1], [user1]),
+            ).to.not.be.revert(ethers);
         });
 
         it("Invalid prevOwner, owner pair provided - Invalid target", async () => {
@@ -318,8 +320,9 @@ describe("OwnerManager", () => {
             const safe = await getEip7702Safe(authority, { owners: [user1.address] });
             const safeAddress = await safe.getAddress();
 
-            await expect(executeContractCallWithSigners(safe, safe, "swapOwner", [AddressOne, user1.address, safeAddress], [user1])).to.not
-                .be.reverted;
+            await expect(
+                executeContractCallWithSigners(safe, safe, "swapOwner", [AddressOne, user1.address, safeAddress], [user1]),
+            ).to.not.be.revert(ethers);
         });
 
         it("can not swap in sentinel", async () => {

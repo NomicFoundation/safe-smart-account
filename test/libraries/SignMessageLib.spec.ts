@@ -21,7 +21,7 @@ describe("SignMessageLib", () => {
     describe("signMessage", () => {
         it("can only if msg.sender provides domain separator", async () => {
             const { lib } = await setupTests();
-            await expect(lib.signMessage("0xbaddad")).to.be.reverted;
+            await expect(lib.signMessage("0xbaddad")).to.be.revert(ethers);
         });
 
         it("should emit event", async () => {

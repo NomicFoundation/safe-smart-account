@@ -39,14 +39,18 @@ describe("StorageAccessible", () => {
             const { safe, killLib } = await setupTests();
             const killLibAddress = await killLib.getAddress();
 
-            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("killme"))).to.be.reverted;
+            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("killme"))).to.be.revert(
+                ethers,
+            );
         });
 
         it("should revert the revert with message", async () => {
             const { safe, killLib } = await setupTests();
             const killLibAddress = await killLib.getAddress();
 
-            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("trever"))).to.be.reverted;
+            await expect(safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("trever"))).to.be.revert(
+                ethers,
+            );
         });
 
         it("should return estimate in revert", async () => {
@@ -56,7 +60,7 @@ describe("StorageAccessible", () => {
 
             await expect(
                 safe.simulateAndRevert.staticCall(killLibAddress, killLib.interface.encodeFunctionData("estimate", [safeAddress, "0x"])),
-            ).to.be.reverted;
+            ).to.be.revert(ethers);
         });
     });
 });

@@ -38,7 +38,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
 
             // Notes: It is not possible to load storage + a call + emit event with 2300 gas
-            await expect(gasCappedTransferContract?.transferEth(safeAddress, { value: ethers.parseEther("1") })).to.be.reverted;
+            await expect(gasCappedTransferContract?.transferEth(safeAddress, { value: ethers.parseEther("1") })).to.be.revert(ethers);
         });
 
         it("should be able to receive ETH via send", async () => {
@@ -46,7 +46,7 @@ describe("Safe", () => {
             const safeAddress = await safe.getAddress();
 
             // Notes: It is not possible to load storage + a call + emit event with 2300 gas
-            await expect(gasCappedTransferContract?.sendEth(safeAddress, { value: ethers.parseEther("1") })).to.be.reverted;
+            await expect(gasCappedTransferContract?.sendEth(safeAddress, { value: ethers.parseEther("1") })).to.be.revert(ethers);
         });
 
         it("should be able to receive ETH via call", async () => {
@@ -89,7 +89,7 @@ describe("Safe", () => {
             } = await setupTests();
             const safeAddress = await safe.getAddress();
 
-            await expect(user1.sendTransaction({ to: safeAddress, value: 23, data: "0xbaddad" })).to.be.revertedWithoutReason();
+            await expect(user1.sendTransaction({ to: safeAddress, value: 23, data: "0xbaddad" })).to.be.revertedWithoutReason(ethers);
         });
     });
 });

@@ -50,7 +50,7 @@ describe("MultiSendCallOnly", () => {
 
             const txs = [buildSafeTransaction({ to: user2.address, operation: 2, nonce: 0 })];
             const safeTx = await buildMultiSendSafeTx(multiSend, txs, await safe.nonce());
-            await expect(executeTx(safe.connect(user1), safeTx, [await safeApproveHash(user1, safe, safeTx, true)])).to.reverted;
+            await expect(executeTx(safe.connect(user1), safeTx, [await safeApproveHash(user1, safe, safeTx, true)])).to.revert(ethers);
         });
 
         it("Should fail when using delegatecall operation", async () => {
@@ -62,7 +62,7 @@ describe("MultiSendCallOnly", () => {
 
             const txs = [buildSafeTransaction({ to: user2.address, operation: 1, nonce: 0 })];
             const safeTx = await buildMultiSendSafeTx(multiSend, txs, await safe.nonce());
-            await expect(executeTx(safe.connect(user1), safeTx, [await safeApproveHash(user1, safe, safeTx, true)])).to.reverted;
+            await expect(executeTx(safe.connect(user1), safeTx, [await safeApproveHash(user1, safe, safeTx, true)])).to.revert(ethers);
         });
 
         it("Can execute empty multisend", async () => {
