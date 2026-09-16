@@ -23,7 +23,7 @@
         "test:L1": "HARDHAT_CHAIN_ID=1 hardhat test mocha --grep '@L1'",
         "test:L2": "SAFE_CONTRACT_UNDER_TEST=SafeL2 hardhat test mocha",
         "test:secp256r1": "HARDHAT_SECP256R1_PRECOMPILE=1 hardhat test mocha --grep '@secp256r1'",
-        "coverage": "hardhat coverage",
+        "coverage": "hardhat test mocha --coverage --grep-exclude '@skip-on-coverage'",
         "codesize": "hardhat codesize",
         "benchmark": "hardhat test mocha benchmark/*.ts",
         "deploy-custom": "rm -rf deployments/custom && npm run deploy-all custom",

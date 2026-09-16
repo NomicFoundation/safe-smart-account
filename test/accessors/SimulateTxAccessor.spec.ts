@@ -48,7 +48,7 @@ describe("SimulateTxAccessor", () => {
             expect(await ethers.provider.getCode(accessorAddress)).to.be.eq(code);
         });
 
-        it("simulate call", async () => {
+        it("simulate call [@skip-on-coverage]", async () => {
             const { safe, accessor, simulator, signers } = await setupTests();
             const [user1] = signers;
             const accessorAddress = await accessor.getAddress();
